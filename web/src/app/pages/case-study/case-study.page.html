@@ -1,504 +1,302 @@
 <app-public-header />
-<main id="main" tabindex="-1" class="cs">
+<main id="main" tabindex="-1">
   <header class="cs-hero">
-    <div class="wrap">
-      <p class="eyebrow light">Case study</p>
-      <h1>DocRoof: document governance for construction projects</h1>
+    <div class="cs-hero-inner">
+      <p class="kicker">Case study</p>
+      <h1>Document governance for construction projects</h1>
       <p class="lead">
-        An independent portfolio project exploring how a construction company's document control
-        could be built with Angular, ASP.NET Core and SQL Server — with the business rules enforced
-        where they belong: in the service layer and in the database.
+        How DocRoof enforces document-control rules with Angular, ASP.NET Core and SQL Server, in
+        the service layer and in the database.
       </p>
-      <div class="status-box" role="note">
-        <strong>Project status: all three planned phases are built and tested locally.</strong>
-        The hosted deployment is <strong>not live yet</strong>: it needs the owner's cloud accounts
-        (steps are in
-        <a [href]="githubUrl + '/blob/main/docs/OWNER_TODO.md'" rel="noopener" target="_blank"
-          ><code>docs/OWNER_TODO.md</code></a
-        >). Every number on this page was measured in the run recorded in
-        <a [href]="githubUrl + '/blob/main/docs/STATUS.md'" rel="noopener" target="_blank"
-          ><code>docs/STATUS.md</code></a
-        >. Source and CI:
-        <a [href]="githubUrl" rel="noopener" target="_blank">github.com/ved-cmpt/DocRoof</a>.
+      <div class="status" role="note">
+        <app-icon name="info" [size]="16" />
+        <p>
+          All three planned phases are built and tested, and CI runs on GitHub. The hosted demo is
+          <strong>not live yet</strong> (it needs the owner's accounts). Numbers come from
+          <a [href]="githubUrl + '/blob/main/docs/STATUS.md'" rel="noopener" target="_blank"
+            >docs/STATUS.md</a
+          >; source at
+          <a [href]="githubUrl" rel="noopener" target="_blank">github.com/ved-cmpt/DocRoof</a>.
+        </p>
       </div>
-      <nav class="toc" aria-label="On this page">
-        <a routerLink="/case-study" fragment="problem">Problem</a>
-        <a routerLink="/case-study" fragment="users">Users</a>
-        <a routerLink="/case-study" fragment="rules">Business rules</a>
-        <a routerLink="/case-study" fragment="arch">Architecture</a>
-        <a routerLink="/case-study" fragment="data">Data model</a>
-        <a routerLink="/case-study" fragment="security">Security</a>
-        <a routerLink="/case-study" fragment="testing">Testing</a>
-        <a routerLink="/case-study" fragment="deploy">Deployment</a>
-        <a routerLink="/case-study" fragment="limits">Limitations</a>
-        <a routerLink="/case-study" fragment="walkthrough">Walkthrough</a>
-      </nav>
     </div>
   </header>
 
-  <article class="wrap body">
-    <section aria-labelledby="problem-h" id="problem">
-      <h2 id="problem-h">The problem</h2>
-      <p>
-        On a building project, hundreds of drawings and specifications change over months. Site
-        teams need the current revision; reviewers need to know which revision a question refers to;
-        managers need to prove who approved what. When this lives in email threads and shared
-        folders, superseded documents get built from, RFIs point at "the latest spec", and approvals
-        are hard to trace.
-      </p>
-      <p>
-        DocRoof's scope is deliberately narrow — <strong>document governance</strong>: controlled
-        documents and revisions, RFIs, submittals, review decisions, approval traceability and
-        audit. It does not do field work orders, procurement, scheduling or cost analytics.
-      </p>
-    </section>
+  <div class="layout">
+    <nav class="toc" aria-label="On this page">
+      <span class="toc-title">On this page</span>
+      @for (t of toc; track t.id) {
+        <a
+          routerLink="/case-study"
+          [fragment]="t.id"
+          [class.active]="activeId() === t.id"
+          [attr.aria-current]="activeId() === t.id ? 'location' : null"
+          >{{ t.label }}</a
+        >
+      }
+    </nav>
 
-    <section aria-labelledby="users-h" id="users">
-      <h2 id="users-h">Users and roles</h2>
-      <p>
-        Roles belong to a project membership, not to a global account, so the same person can hold
-        different roles on different projects.
-      </p>
-      <table class="data-table">
-        <caption class="visually-hidden">
-          Roles
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">Role (per project)</th>
-            <th scope="col">Responsibilities</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th scope="row">Document Controller</th>
-            <td>
-              Uploads, versions and distributes records; coordinates submittals; accepts extracted
-              metadata.
-            </td>
-          </tr>
-          <tr>
-            <th scope="row">Project Manager</th>
-            <td>Assigns reviewers, approves RFI answers and closes RFIs, finalizes submittals.</td>
-          </tr>
-          <tr>
-            <th scope="row">Reviewer</th>
-            <td>Answers assigned RFIs and records one decision per submittal review cycle.</td>
-          </tr>
-          <tr>
-            <th scope="row">Requester</th>
-            <td>Raises RFIs that cite a revision and page, and sees responses.</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+    <article class="body">
+      <section id="problem" aria-labelledby="problem-h">
+        <h2 id="problem-h">The problem</h2>
+        <p>
+          Drawings and specifications change for months. Site teams need the current revision,
+          reviewers need to know which revision a question is about, and managers need to prove who
+          approved what. In email and shared folders, superseded files get built from and approvals
+          get lost.
+        </p>
+        <p>
+          DocRoof's scope is narrow on purpose: <strong>document governance</strong> — revisions,
+          RFIs, submittals, decisions and audit. No scheduling, procurement or cost tracking.
+        </p>
+      </section>
 
-    <section aria-labelledby="rules-h" id="rules">
-      <h2 id="rules-h">Business rules, enforced on the server</h2>
-      <ul>
-        <li>Document numbers are unique per project; revision labels are unique per document.</li>
-        <li>
-          A revision's content columns never change after insert: the service layer, an EF Core
-          interceptor and a SQL trigger all reject it.
-        </li>
-        <li>
-          Uploads are accepted only when their first bytes match an allowed type (PDF, TXT, PNG,
-          JPG) and the size limit; executables are rejected even when renamed.
-        </li>
-        <li>
-          RFIs follow Draft → Submitted → Assigned → Answered → Closed (Reopened → Assigned). Only
-          the assignee answers; only a project manager approves and closes; a second approval
-          returns 409.
-        </li>
-        <li>
-          RFIs cite a revision of the same project and a page within its page count; citations stay
-          pinned.
-        </li>
-        <li>
-          Submittals allow one decision per review cycle by the assigned reviewer; Revise &amp;
-          Resubmit needs a newer revision and starts a new cycle.
-        </li>
-        <li>
-          Stale rowversions return 409, so concurrent edits never overwrite each other silently.
-        </li>
-        <li>Another tenant's or project's IDs return 404, so existence is never leaked.</li>
-        <li>Every change writes an append-only audit event in the same transaction.</li>
-        <li>
-          Extraction only proposes values with a cited page; a person accepts or rejects each one.
-        </li>
-      </ul>
-    </section>
+      <section id="roles" aria-labelledby="roles-h">
+        <h2 id="roles-h">Roles</h2>
+        <p>Roles belong to a project membership, so one person can hold different roles per project.</p>
+        <div class="table-card">
+          <table class="table">
+            <caption class="visually-hidden">Project roles</caption>
+            <thead>
+              <tr>
+                <th scope="col">Role</th>
+                <th scope="col">Responsibilities</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Document Controller</th>
+                <td>Uploads and versions records, coordinates submittals, accepts extracted metadata.</td>
+              </tr>
+              <tr>
+                <th scope="row">Project Manager</th>
+                <td>Assigns reviewers, approves and closes RFIs, finalizes submittals.</td>
+              </tr>
+              <tr>
+                <th scope="row">Reviewer</th>
+                <td>Answers assigned RFIs; one decision per submittal review cycle.</td>
+              </tr>
+              <tr>
+                <th scope="row">Requester</th>
+                <td>Raises RFIs that cite a revision and page.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-    <section aria-labelledby="arch-h" id="arch">
-      <h2 id="arch-h">Architecture</h2>
-      <p>
-        A modular monolith: the Angular app calls the ASP.NET Core REST API, controllers delegate to
-        services that enforce validation, authorization, transactions and audit, and EF Core talks
-        to SQL Server. In production the API also serves the built Angular files, so the auth cookie
-        stays first-party.
-      </p>
-      <figure class="diagram">
-        <svg viewBox="0 0 760 210" role="img" aria-labelledby="arch-svg-title arch-svg-desc">
-          <title id="arch-svg-title">DocRoof architecture</title>
-          <desc id="arch-svg-desc">
-            The browser runs the Angular SPA and calls the ASP.NET Core API over HTTPS with a cookie
-            and an antiforgery header. Controllers call services, which use EF Core to reach SQL
-            Server and an IFileStorage abstraction backed by local disk or a SQL varbinary table.
-            Background services run guest cleanup and overdue reminders.
-          </desc>
-          <g font-family="Inter, sans-serif" font-size="13">
-            <rect
-              x="10"
-              y="60"
-              width="150"
-              height="80"
-              rx="8"
-              fill="#fff"
-              stroke="#1b2a3d"
-              stroke-width="2"
-            />
-            <text x="85" y="94" text-anchor="middle" font-weight="700">Browser</text>
-            <text x="85" y="114" text-anchor="middle">Angular SPA</text>
-            <text x="85" y="130" text-anchor="middle" font-size="11">pdf.js preview</text>
-            <rect x="225" y="20" width="250" height="170" rx="8" fill="#1b2a3d" />
-            <text x="350" y="48" text-anchor="middle" fill="#fff" font-weight="700">
-              ASP.NET Core (.NET 10)
-            </text>
-            <text x="350" y="72" text-anchor="middle" fill="#c6d0db">
-              Headers · Rate limits · Cookie auth
-            </text>
-            <text x="350" y="92" text-anchor="middle" fill="#c6d0db">
-              Antiforgery filter · ProblemDetails
-            </text>
-            <text x="350" y="116" text-anchor="middle" fill="#f5a524">Controllers → Services</text>
-            <text x="350" y="136" text-anchor="middle" fill="#c6d0db">
-              Project access · Workflows · Audit
-            </text>
-            <text x="350" y="160" text-anchor="middle" fill="#c6d0db">EF Core · IFileStorage</text>
-            <text x="350" y="178" text-anchor="middle" fill="#c6d0db" font-size="11">
-              Cleanup and reminder jobs
-            </text>
-            <rect
-              x="545"
-              y="20"
-              width="200"
-              height="70"
-              rx="8"
-              fill="#fff"
-              stroke="#1f5fbf"
-              stroke-width="2"
-            />
-            <text x="645" y="50" text-anchor="middle" font-weight="700">SQL Server 2022</text>
-            <text x="645" y="70" text-anchor="middle" font-size="11">
-              constraints · triggers · view
-            </text>
-            <rect
-              x="545"
-              y="120"
-              width="200"
-              height="70"
-              rx="8"
-              fill="#fff"
-              stroke="#f5a524"
-              stroke-width="2"
-            />
-            <text x="645" y="150" text-anchor="middle" font-weight="700">File storage</text>
-            <text x="645" y="170" text-anchor="middle" font-size="11">
-              local disk or SQL varbinary
-            </text>
-            <path d="M160 100h57" stroke="#1b2a3d" stroke-width="2" marker-end="url(#a)" />
-            <path d="M475 55h62" stroke="#1b2a3d" stroke-width="2" marker-end="url(#a)" />
-            <path d="M475 155h62" stroke="#1b2a3d" stroke-width="2" marker-end="url(#a)" />
-            <text x="190" y="90" text-anchor="middle" font-size="11">HTTPS</text>
-          </g>
-          <defs>
-            <marker
-              id="a"
-              viewBox="0 0 10 10"
-              refX="9"
-              refY="5"
-              markerWidth="7"
-              markerHeight="7"
-              orient="auto"
-            >
-              <path d="M0 0 10 5 0 10z" fill="#1b2a3d" />
-            </marker>
-          </defs>
-        </svg>
-      </figure>
-    </section>
+      <section id="rules" aria-labelledby="rules-h">
+        <h2 id="rules-h">Business rules, enforced on the server</h2>
+        <ul class="checks">
+          <li>Document numbers are unique per project; revision labels unique per document.</li>
+          <li>
+            Stored revisions never change: the service layer, an EF Core interceptor and a SQL trigger
+            all reject edits.
+          </li>
+          <li>Uploads must match an allowed type by their first bytes (PDF, TXT, PNG, JPG).</li>
+          <li>
+            RFIs move Draft → Submitted → Assigned → Answered → Closed. Only the assignee answers;
+            only a project manager approves and closes.
+          </li>
+          <li>Citations stay pinned to the cited revision and page.</li>
+          <li>One submittal decision per cycle; Revise &amp; Resubmit needs a newer revision.</li>
+          <li>Stale rowversions return 409; other tenants' IDs return 404.</li>
+          <li>Every change writes an append-only audit event in the same transaction.</li>
+        </ul>
+      </section>
 
-    <section aria-labelledby="data-h" id="data">
-      <h2 id="data-h">Data model</h2>
-      <figure class="diagram">
-        <svg viewBox="0 0 760 300" role="img" aria-labelledby="dm-title dm-desc">
-          <title id="dm-title">Core data model</title>
-          <desc id="dm-desc">
-            A tenant owns projects and users. Projects have memberships with roles, documents, RFIs,
-            submittals, comments and audit events. Documents have immutable revisions, one of which
-            is current. RFIs cite one revision and page and have responses. Submittals point at a
-            revision and have one review decision per cycle. Revisions have extraction suggestions.
-          </desc>
-          <g font-family="Inter, sans-serif" font-size="12">
-            <g fill="#fff" stroke="#1b2a3d" stroke-width="1.5">
-              <rect x="20" y="20" width="120" height="40" rx="6" />
-              <rect x="20" y="130" width="120" height="40" rx="6" />
-              <rect x="190" y="130" width="140" height="40" rx="6" />
-              <rect x="190" y="20" width="140" height="40" rx="6" />
-              <rect x="380" y="20" width="160" height="40" rx="6" />
-              <rect
-                x="380"
-                y="130"
-                width="160"
-                height="40"
-                rx="6"
-                stroke="#f5a524"
-                stroke-width="2.5"
-              />
-              <rect x="590" y="130" width="150" height="40" rx="6" />
-              <rect x="380" y="240" width="160" height="40" rx="6" />
-              <rect x="590" y="20" width="150" height="40" rx="6" />
-              <rect x="190" y="240" width="140" height="40" rx="6" />
-              <rect x="590" y="240" width="150" height="40" rx="6" />
+      <section id="arch" aria-labelledby="arch-h">
+        <h2 id="arch-h">Architecture</h2>
+        <p>
+          A modular monolith. Controllers delegate to services that own validation, authorization,
+          transactions and audit; EF Core talks to SQL Server. In production the API also serves the
+          Angular build, so the auth cookie stays first-party.
+        </p>
+        <figure class="diagram">
+          <svg viewBox="0 0 720 230" role="img" aria-labelledby="arch-t arch-d">
+            <title id="arch-t">DocRoof architecture</title>
+            <desc id="arch-d">
+              The Angular app in the browser calls the ASP.NET Core API over HTTPS with a cookie and an
+              antiforgery header. Controllers call services, which use EF Core for SQL Server and a
+              storage abstraction backed by local disk or a SQL table. Background jobs handle guest
+              cleanup and overdue reminders.
+            </desc>
+            <defs>
+              <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0 1 9 5 0 9z" class="arrow" />
+              </marker>
+            </defs>
+            <rect x="8" y="78" width="140" height="74" rx="10" class="node" />
+            <text x="78" y="110" class="lbl" text-anchor="middle">Browser</text>
+            <text x="78" y="130" class="sub" text-anchor="middle">Angular · pdf.js</text>
+
+            <rect x="210" y="16" width="260" height="198" rx="12" class="node key" />
+            <text x="340" y="44" class="lbl" text-anchor="middle">ASP.NET Core (.NET 10)</text>
+            <rect x="230" y="60" width="220" height="34" rx="8" class="inner" />
+            <text x="340" y="82" class="sub" text-anchor="middle">Auth · antiforgery · rate limits</text>
+            <rect x="230" y="102" width="220" height="34" rx="8" class="inner" />
+            <text x="340" y="124" class="sub" text-anchor="middle">Controllers → services · audit</text>
+            <rect x="230" y="144" width="220" height="34" rx="8" class="inner" />
+            <text x="340" y="166" class="sub" text-anchor="middle">EF Core · file storage</text>
+            <text x="340" y="200" class="sub" text-anchor="middle">Cleanup and reminder jobs</text>
+
+            <rect x="540" y="30" width="172" height="70" rx="10" class="node" />
+            <text x="626" y="60" class="lbl" text-anchor="middle">SQL Server 2022</text>
+            <text x="626" y="80" class="sub" text-anchor="middle">constraints · triggers · view</text>
+            <rect x="540" y="130" width="172" height="70" rx="10" class="node" />
+            <text x="626" y="160" class="lbl" text-anchor="middle">File storage</text>
+            <text x="626" y="180" class="sub" text-anchor="middle">disk or SQL varbinary</text>
+
+            <path d="M148 115h54" class="edge" marker-end="url(#arr)" />
+            <text x="176" y="106" class="tiny" text-anchor="middle">HTTPS</text>
+            <path d="M470 65h62" class="edge" marker-end="url(#arr)" />
+            <path d="M470 165h62" class="edge" marker-end="url(#arr)" />
+          </svg>
+        </figure>
+      </section>
+
+      <section id="data" aria-labelledby="data-h">
+        <h2 id="data-h">Data model</h2>
+        <figure class="diagram">
+          <svg viewBox="0 0 720 270" role="img" aria-labelledby="dm-t dm-d">
+            <title id="dm-t">Core data model</title>
+            <desc id="dm-d">
+              A tenant owns projects and users. Memberships give users a role per project. Projects have
+              documents, RFIs, submittals, comments and audit events. Documents have immutable
+              revisions, one current. RFIs cite one revision and page and have responses. Submittals
+              point at a revision and have one decision per cycle. Revisions have extraction
+              suggestions.
+            </desc>
+            <g class="er">
+              <rect x="10" y="20" width="120" height="40" rx="8" class="node" /><text x="70" y="45" class="lbl" text-anchor="middle">Tenant</text>
+              <rect x="10" y="120" width="120" height="40" rx="8" class="node" /><text x="70" y="145" class="lbl" text-anchor="middle">User</text>
+              <rect x="180" y="20" width="140" height="40" rx="8" class="node" /><text x="250" y="45" class="lbl" text-anchor="middle">Project</text>
+              <rect x="180" y="120" width="140" height="40" rx="8" class="node" /><text x="250" y="145" class="lbl" text-anchor="middle">Membership · role</text>
+              <rect x="370" y="20" width="150" height="40" rx="8" class="node" /><text x="445" y="45" class="lbl" text-anchor="middle">Document</text>
+              <rect x="370" y="112" width="150" height="56" rx="8" class="node key" /><text x="445" y="136" class="lbl" text-anchor="middle">DocumentRevision</text><text x="445" y="154" class="sub" text-anchor="middle">immutable · SHA-256</text>
+              <rect x="570" y="120" width="140" height="40" rx="8" class="node" /><text x="640" y="145" class="lbl" text-anchor="middle">Suggestion</text>
+              <rect x="570" y="20" width="140" height="40" rx="8" class="node" /><text x="640" y="45" class="lbl" text-anchor="middle">AuditEvent</text>
+              <rect x="370" y="216" width="150" height="40" rx="8" class="node" /><text x="445" y="241" class="lbl" text-anchor="middle">RFI → Response</text>
+              <rect x="570" y="216" width="140" height="40" rx="8" class="node" /><text x="640" y="241" class="lbl" text-anchor="middle">Submittal → Decision</text>
+              <rect x="180" y="216" width="140" height="40" rx="8" class="node" /><text x="250" y="241" class="lbl" text-anchor="middle">Comment</text>
+              <path d="M130 40h50M70 60v60M130 140h50M250 60v60M320 40h50M445 60v52M520 140h50M445 168v48M520 40h50M590 160v56" class="edge" />
+              <text x="455" y="196" class="tiny">cites revision + page</text>
             </g>
-            <g text-anchor="middle" font-weight="600">
-              <text x="80" y="45">Tenant</text>
-              <text x="80" y="155">User</text>
-              <text x="260" y="155">Membership (role)</text>
-              <text x="260" y="45">Project</text>
-              <text x="460" y="45">Document</text>
-              <text x="460" y="150">DocumentRevision</text>
-              <text x="460" y="164" font-weight="400" font-size="10">immutable · SHA-256</text>
-              <text x="665" y="155">ExtractionSuggestion</text>
-              <text x="460" y="265">Rfi → RfiResponse</text>
-              <text x="665" y="45">AuditEvent</text>
-              <text x="260" y="265">Comment</text>
-              <text x="665" y="265">Submittal → Decision</text>
-            </g>
-            <g stroke="#536274" stroke-width="1.5" fill="none">
-              <path d="M140 40h50" />
-              <path d="M80 60v70" />
-              <path d="M140 150h50" />
-              <path d="M260 60v70" />
-              <path d="M330 40h50" />
-              <path d="M460 60v70" />
-              <path d="M540 150h50" />
-              <path d="M460 170v70" />
-              <path d="M540 40h50" />
-              <path d="M330 150c20 30 30 60 30 90" stroke-dasharray="4 3" />
-              <path d="M540 165c40 20 60 50 80 75" />
-            </g>
-            <text x="470" y="215" font-size="10" fill="#536274">cites revision + page</text>
-          </g>
-        </svg>
-      </figure>
-      <p class="small muted">
-        Full schema, constraints, indexes and the documented <code>vw_ReviewQueue</code> view are in
-        <code>docs/DATABASE.md</code>.
-      </p>
-    </section>
+          </svg>
+        </figure>
+        <p class="note">
+          Schema, indexes and the documented <code>vw_ReviewQueue</code> view are in
+          <code>docs/DATABASE.md</code>.
+        </p>
+      </section>
 
-    <section aria-labelledby="why-h" id="why">
-      <h2 id="why-h">Why this stack fits an enterprise construction team</h2>
-      <p>
-        Construction companies commonly run Microsoft-centred estates: SQL Server for project and
-        financial data, .NET services behind the firewall, and browser front-ends for field and
-        office staff. DocRoof uses that stack with the patterns such a team would expect to
-        maintain: typed REST contracts and ProblemDetails errors, migrations under version control,
-        constraints and triggers in the database, a documented T-SQL view for reporting, and
-        automated tests that run against a real SQL Server rather than an in-memory fake.
-      </p>
-    </section>
+      <section id="security" aria-labelledby="security-h">
+        <h2 id="security-h">Security</h2>
+        <ul class="checks">
+          <li><strong>Same-origin cookies</strong> (HttpOnly, Secure, SameSite=Strict) plus antiforgery on every unsafe request.</li>
+          <li><strong>Object-level checks</strong> in services: tenant membership and project role on every call.</li>
+          <li><strong>Upload hygiene:</strong> magic-byte allow-list, size limits, generated storage keys, active-content PDFs download-only.</li>
+          <li><strong>Untrusted text:</strong> extraction can only create suggestions; a seeded prompt-injection PDF proves it in a test.</li>
+          <li><strong>Abuse controls:</strong> rate limits, lockout, demo and upload quotas.</li>
+          <li><strong>Headers:</strong> CSP, HSTS in production, frame-ancestors none, nosniff.</li>
+        </ul>
+      </section>
 
-    <section aria-labelledby="security-h" id="security">
-      <h2 id="security-h">Security decisions</h2>
-      <ul>
-        <li>
-          <strong>Same-origin cookies</strong> (HttpOnly, Secure, SameSite=Strict) plus antiforgery
-          tokens on every unsafe request — no tokens in browser storage.
-        </li>
-        <li>
-          <strong>Object-level authorization</strong> in services: membership in the caller's tenant
-          and the project role are checked on every call; frontend hiding is never relied on.
-        </li>
-        <li>
-          <strong>Upload hygiene</strong>: magic-byte allow-list, size limits, generated storage
-          keys, sanitized names, PDFs with scripts or launch actions served download-only.
-        </li>
-        <li>
-          <strong>Untrusted text</strong>: document text is data only. Extraction can create
-          suggestions and nothing else; the seeded prompt-injection PDF proves it in an automated
-          test.
-        </li>
-        <li>
-          <strong>Abuse controls</strong>: rate limits on sign-in, demo creation, uploads and
-          extraction; account lockout; per-address and global demo quotas; guest upload quotas.
-        </li>
-        <li>
-          <strong>Headers</strong>: CSP, HSTS in production, frame-ancestors none, nosniff,
-          Referrer-Policy, Permissions-Policy.
-        </li>
-      </ul>
-    </section>
-
-    <section aria-labelledby="testing-h" id="testing">
-      <h2 id="testing-h">Testing approach</h2>
-      <div class="stats">
-        <div>
-          <span class="n">{{ counts.unit }}</span><span>backend unit tests</span>
+      <section id="testing" aria-labelledby="testing-h">
+        <h2 id="testing-h">Testing</h2>
+        <div class="stats">
+          <div><span class="n">{{ counts.unit }}</span><span>backend unit</span></div>
+          <div><span class="n">{{ counts.integration }}</span><span>integration on real SQL Server</span></div>
+          <div><span class="n">{{ counts.angular }}</span><span>Angular unit</span></div>
+          <div><span class="n">{{ counts.e2e }}</span><span>Playwright end-to-end</span></div>
         </div>
-        <div>
-          <span class="n">{{ counts.integration }}</span><span
-            >integration tests on real SQL Server</span
-          >
-        </div>
-        <div>
-          <span class="n">{{ counts.angular }}</span><span>Angular unit tests</span>
-        </div>
-        <div>
-          <span class="n">{{ counts.e2e }}</span><span>Playwright end-to-end tests</span>
-        </div>
-      </div>
-      <p>
-        Workflow rules are unit tested exhaustively (every state × action). Integration tests start
-        SQL Server 2022 in Docker with Testcontainers and exercise the real HTTP pipeline:
-        cross-tenant 404s, wrong-role 403s, duplicate approvals and stale rowversions (409 with no
-        database change), rollback with injected faults, the immutability trigger, upload rejection,
-        rate limits, lockout, security headers and antiforgery on every unsafe endpoint. Playwright
-        runs the full guided scenario, reset, mobile and keyboard-only smoke tests, axe
-        accessibility checks and the extraction flow. All counts are from the run on
-        {{ counts.date }} recorded in <code>docs/STATUS.md</code>.
-      </p>
-    </section>
+        <p>
+          Workflow rules are unit tested for every state and action. Integration tests run SQL Server
+          2022 in Docker through the real HTTP pipeline: cross-tenant 404s, wrong-role 403s, stale
+          rowversions, rollback on injected faults, the immutability trigger, upload rejection, rate
+          limits and antiforgery on every unsafe endpoint. Playwright covers the guided scenario,
+          reset, mobile, keyboard-only use and axe accessibility checks. Counts are from the run on
+          {{ counts.date }}.
+        </p>
+      </section>
 
-    <section aria-labelledby="deploy-h" id="deploy">
-      <h2 id="deploy-h">Deployment design</h2>
-      <figure class="diagram">
-        <svg viewBox="0 0 760 150" role="img" aria-labelledby="dep-title dep-desc">
-          <title id="dep-title">Deployment</title>
-          <desc id="dep-desc">
-            Visitors reach one Docker container on a free web service over HTTPS. The container
-            serves the Angular app and the API from the same origin and connects over TLS to an
-            Azure SQL Database free-offer instance, which stores both the data and the uploaded
-            files.
-          </desc>
-          <g font-family="Inter, sans-serif" font-size="13">
-            <rect
-              x="10"
-              y="45"
-              width="130"
-              height="60"
-              rx="8"
-              fill="#fff"
-              stroke="#1b2a3d"
-              stroke-width="2"
-            />
-            <text x="75" y="80" text-anchor="middle" font-weight="700">Visitor</text>
-            <rect x="220" y="25" width="270" height="100" rx="8" fill="#1b2a3d" />
-            <text x="355" y="58" text-anchor="middle" fill="#fff" font-weight="700">
-              One container (free web service)
-            </text>
-            <text x="355" y="82" text-anchor="middle" fill="#c6d0db">
-              ASP.NET Core API + built Angular app
-            </text>
-            <text x="355" y="104" text-anchor="middle" fill="#c6d0db">
-              migrations on start · /health/ready
-            </text>
-            <rect
-              x="570"
-              y="35"
-              width="180"
-              height="80"
-              rx="8"
-              fill="#fff"
-              stroke="#1f5fbf"
-              stroke-width="2"
-            />
-            <text x="660" y="70" text-anchor="middle" font-weight="700">Azure SQL Database</text>
-            <text x="660" y="90" text-anchor="middle" font-size="11">
-              free offer · Storage:Mode=Database
-            </text>
-            <path d="M140 75h72" stroke="#1b2a3d" stroke-width="2" marker-end="url(#b)" />
-            <path d="M490 75h72" stroke="#1b2a3d" stroke-width="2" marker-end="url(#b)" />
-            <text x="176" y="66" text-anchor="middle" font-size="11">HTTPS</text>
-            <text x="530" y="66" text-anchor="middle" font-size="11">TLS 1.2+</text>
-          </g>
-          <defs>
-            <marker
-              id="b"
-              viewBox="0 0 10 10"
-              refX="9"
-              refY="5"
-              markerWidth="7"
-              markerHeight="7"
-              orient="auto"
-            >
-              <path d="M0 0 10 5 0 10z" fill="#1b2a3d" />
-            </marker>
-          </defs>
-        </svg>
-      </figure>
-      <p>
-        The production image, Render blueprint, Azure SQL Bicep template and smoke scripts are in
-        the repository; the image was built and smoke-tested locally with Docker Compose.
-        <strong>Hosted deployment: not complete</strong> — it requires the owner's accounts.
-      </p>
-    </section>
+      <section id="deploy" aria-labelledby="deploy-h">
+        <h2 id="deploy-h">Deployment</h2>
+        <figure class="diagram">
+          <svg viewBox="0 0 720 130" role="img" aria-labelledby="dep-t dep-d">
+            <title id="dep-t">Deployment</title>
+            <desc id="dep-d">
+              Visitors reach one container on a free web service over HTTPS. It serves the Angular app
+              and the API from one origin and connects over TLS to an Azure SQL Database free-offer
+              instance that stores data and uploaded files.
+            </desc>
+            <defs>
+              <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0 1 9 5 0 9z" class="arrow" />
+              </marker>
+            </defs>
+            <rect x="8" y="35" width="120" height="60" rx="10" class="node" />
+            <text x="68" y="70" class="lbl" text-anchor="middle">Visitor</text>
+            <rect x="210" y="20" width="280" height="90" rx="12" class="node key" />
+            <text x="350" y="52" class="lbl" text-anchor="middle">One container (free web service)</text>
+            <text x="350" y="74" class="sub" text-anchor="middle">API + Angular build · one origin</text>
+            <text x="350" y="92" class="sub" text-anchor="middle">migrations on start · /health/ready</text>
+            <rect x="560" y="30" width="152" height="70" rx="10" class="node" />
+            <text x="636" y="60" class="lbl" text-anchor="middle">Azure SQL</text>
+            <text x="636" y="80" class="sub" text-anchor="middle">free offer · files in DB</text>
+            <path d="M128 65h74" class="edge" marker-end="url(#arr2)" />
+            <path d="M490 65h62" class="edge" marker-end="url(#arr2)" />
+            <text x="165" y="56" class="tiny" text-anchor="middle">HTTPS</text>
+            <text x="525" y="56" class="tiny" text-anchor="middle">TLS</text>
+          </svg>
+        </figure>
+        <p>
+          The image, Render blueprint, Azure SQL Bicep template and smoke scripts are in the repository,
+          and the image passes the smoke test locally. <strong>Hosted deployment: not complete.</strong>
+        </p>
+      </section>
 
-    <section aria-labelledby="limits-h" id="limits">
-      <h2 id="limits-h">Known limitations</h2>
-      <ul>
-        <li>
-          No malware or antivirus scanning of uploads; content-type sniffing and size limits only.
-        </li>
-        <li>No OCR: image-only PDFs show "No text layer detected — extraction unavailable".</li>
-        <li>
-          Rules-based extraction understands title-block conventions like the seeded documents';
-          real-world layouts would need more rules or the optional language-model adapter.
-        </li>
-        <li>Active-content detection in PDFs is heuristic; it is a safety net, not a sanitizer.</li>
-        <li>Notifications are in-app only; no email is sent.</li>
-        <li>The hosted demo is not deployed yet (owner accounts required).</li>
-      </ul>
-    </section>
+      <section id="limits" aria-labelledby="limits-h">
+        <h2 id="limits-h">Known limitations</h2>
+        <ul class="plain">
+          <li>No malware scanning of uploads; type sniffing and size limits only.</li>
+          <li>No OCR: image-only PDFs show “No text layer detected”.</li>
+          <li>Rules-based extraction targets title blocks like the seeded documents'.</li>
+          <li>PDF active-content detection is heuristic.</li>
+          <li>Notifications are in-app only.</li>
+        </ul>
+      </section>
 
-    <section aria-labelledby="walkthrough-h" id="walkthrough">
-      <h2 id="walkthrough-h">Demo walkthrough</h2>
-      <ol class="walk">
-        <li>
-          Choose <strong>Try the live demo</strong>: a private workspace is created from the seed
-          template.
-        </li>
-        <li>
-          Open <code>MCC-M-23 05 00</code> (Common Work Results for HVAC) and compare R0 with R1.
-        </li>
-        <li>
-          On R1 page 3, choose <strong>Raise RFI on this page</strong> and submit the question about
-          the RTU-2 test pressure.
-        </li>
-        <li>
-          Switch persona to Priya Raman (Project Manager) and assign Marcus Lindqvist with a due
-          date.
-        </li>
-        <li>Switch to Marcus Lindqvist (Reviewer) and post an answer.</li>
-        <li>Switch back to Priya Raman, approve the answer and close the RFI.</li>
-        <li>Open <strong>Audit</strong> to see every step with actor and timestamp.</li>
-      </ol>
-      <figure class="shot">
-        <img
-          src="/screenshots/rfi-detail.png"
-          width="1440"
-          height="900"
-          loading="lazy"
-          alt="An RFI detail page showing the question, its pinned citation to revision R1 page 3, the actions panel and the timeline"
-        />
-        <figcaption>RFI detail captured from the running app (fictional data).</figcaption>
-      </figure>
-      <div class="ctas">
-        <a routerLink="/demo" class="btn primary">Start the demo</a>
-        <a [href]="githubUrl" rel="noopener" target="_blank" class="btn ghost">Source on GitHub</a>
-      </div>
-    </section>
-  </article>
+      <section id="walkthrough" aria-labelledby="walkthrough-h">
+        <h2 id="walkthrough-h">Demo walkthrough</h2>
+        <ol class="walk">
+          <li>Start the demo: a private workspace is created from the seed template.</li>
+          <li>Open <code>MCC-M-23 05 00</code> and compare R0 with R1.</li>
+          <li>On R1 page 3, raise an RFI about the RTU-2 test pressure.</li>
+          <li>As Priya Raman (project manager), assign Marcus Lindqvist.</li>
+          <li>As Marcus Lindqvist (reviewer), post an answer.</li>
+          <li>As Priya Raman, approve the answer and close the RFI.</li>
+          <li>Open Audit to see every step with actor and time.</li>
+        </ol>
+        <figure class="shot">
+          <img
+            src="/screenshots/tour-rfis.png"
+            width="1120"
+            height="640"
+            loading="lazy"
+            decoding="async"
+            alt="An RFI record with its question, a citation pinned to a revision and page, and a details panel"
+          />
+          <figcaption>An RFI record, captured from the running app (fictional data).</figcaption>
+        </figure>
+        <div class="ctas">
+          <a routerLink="/demo" class="btn btn-primary">Start the demo</a>
+          <a [href]="githubUrl" rel="noopener" target="_blank" class="btn btn-secondary"
+            >Source on GitHub <app-icon name="arrow-up-right" [size]="16"
+          /></a>
+        </div>
+      </section>
+    </article>
+  </div>
 </main>
 <app-public-footer />

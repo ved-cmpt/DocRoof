@@ -1,209 +1,126 @@
 <app-public-header />
 <main id="main" tabindex="-1">
   <section class="hero" aria-labelledby="hero-title">
-    <div class="hero-inner">
-      <div class="hero-copy">
-        <p class="eyebrow light">Construction document control</p>
-        <h1 id="hero-title">Every document, decision, and revision stays traceable.</h1>
-        <p class="lead">
-          DocRoof keeps drawings, specifications, RFIs and submittals in one governed register — so
-          the team on site builds from the current revision, every question cites the exact page it
-          is about, and every approval has a name and a timestamp.
-        </p>
-        <div class="cta-row">
-          <a routerLink="/demo" class="btn primary">Try the live demo</a>
-          <a routerLink="/case-study" class="btn ghost">Read the case study</a>
-        </div>
-        <p class="fine">
-          No sign-up. A private workspace with fictional data, deleted after 24 hours.
-        </p>
+    <div class="hero-copy">
+      <h1 id="hero-title">Every revision. Every answer. <span class="nowrap">On record.</span></h1>
+      <p class="lead">
+        Document control for construction teams: drawings, specs, RFIs and submittals in one
+        register, with every decision traceable.
+      </p>
+      <div class="ctas">
+        <a routerLink="/demo" class="btn btn-primary btn-lg">Try the live demo</a>
+        <a routerLink="/" fragment="how" class="btn btn-secondary btn-lg">See how it works</a>
       </div>
-      <figure class="hero-shot">
-        <img
-          src="/screenshots/register.png"
-          fetchpriority="high"
-          width="1440"
-          height="900"
-          alt="The DocRoof document register showing controlled documents for a fictional clinic project, with discipline, status and revision chips"
-        />
-        <figcaption>Captured from the running application with seeded, fictional data.</figcaption>
-      </figure>
+      <p class="fine">No sign-up · fictional data · deleted after 24 hours</p>
+    </div>
+    <div class="hero-visual">
+      <app-hero-preview />
     </div>
   </section>
 
-  <section class="band" aria-labelledby="problem-title">
-    <div class="wrap two-col">
-      <div>
-        <p class="eyebrow">The problem</p>
-        <h2 id="problem-title">Paper trails break where projects get busy</h2>
-        <ul class="problems">
-          <li>Superseded drawings keep circulating by email and end up on site.</li>
-          <li>RFIs reference "the latest spec" instead of a specific revision and page.</li>
-          <li>Approvals live in inboxes, so nobody can say who accepted what, or when.</li>
-          <li>Overdue reviews are discovered only when the schedule slips.</li>
-        </ul>
-      </div>
-      <div>
-        <p class="eyebrow">The DocRoof approach</p>
-        <h2>One register, enforced on the server</h2>
-        <ul class="solutions">
-          <li>
-            Revisions are immutable rows with checksums; the register always points at the current
-            one.
+  <section id="how" class="section" aria-labelledby="how-title">
+    <div class="wrap centered">
+      <p class="kicker">How it works</p>
+      <h2 id="how-title">From upload to approval in three steps</h2>
+      <ol class="steps" appReveal>
+        @for (s of steps; track s.title; let i = $index) {
+          <li [style.--i]="i">
+            <span class="step-icon"><app-icon [name]="s.icon" [size]="20" /></span>
+            <h3><span class="step-n">{{ i + 1 }}</span> {{ s.title }}</h3>
+            <p>{{ s.text }}</p>
           </li>
-          <li>
-            RFIs pin the exact revision and page they cite, even after newer revisions arrive.
-          </li>
-          <li>Workflow transitions are role-checked and written to an append-only audit trail.</li>
-          <li>A review queue view flags overdue items, and reminders are created automatically.</li>
-        </ul>
-      </div>
+        }
+      </ol>
     </div>
   </section>
 
-  <section class="wrap section" id="workflows" aria-labelledby="workflows-title">
-    <p class="eyebrow">Three role workflows</p>
-    <h2 id="workflows-title">Built around who does what on a project</h2>
-    <div class="cards">
-      @for (w of workflows; track w.role) {
-        <article class="card">
-          <h3>{{ w.role }}</h3>
-          <p class="muted">{{ w.summary }}</p>
-          <ol>
-            @for (s of w.steps; track s) {
-              <li>{{ s }}</li>
-            }
-          </ol>
-        </article>
-      }
-    </div>
-    <p class="muted small">
-      Requesters (for example a site superintendent) raise RFIs and see responses.
-    </p>
-  </section>
-  <section class="wrap section gallery" aria-labelledby="gallery-title">
-    <p class="eyebrow">See it working</p>
-    <h2 id="gallery-title">Real screens from the running application</h2>
-    <div class="shots">
-      <figure>
-        <img
-          src="/screenshots/document-detail.png"
-          width="1440"
-          height="900"
-          loading="lazy"
-          alt="Document detail with an in-app PDF preview, version history showing current and superseded revisions, and revision comparison"
-        />
-        <figcaption>
-          Version history with checksums and an in-app preview of the HVAC specification.
-        </figcaption>
-      </figure>
-      <figure>
-        <img
-          src="/screenshots/rfi-detail.png"
-          width="1440"
-          height="900"
-          loading="lazy"
-          alt="RFI detail with the question, a citation pinned to revision R1 page 3, role-aware actions and a timeline"
-        />
-        <figcaption>An RFI pinned to revision R1, page 3, with its audited timeline.</figcaption>
-      </figure>
-      <figure>
-        <img
-          src="/screenshots/insights.png"
-          width="1440"
-          height="1620"
-          loading="lazy"
-          alt="Insights dashboard with RFI turnaround, open versus closed RFIs per week, overdue reviews by discipline and document volume charts"
-        />
-        <figcaption>
-          Live insights computed from the database, with data tables for every chart.
-        </figcaption>
-      </figure>
-    </div>
-  </section>
-
-  <section class="band blueprint" aria-labelledby="cap-title">
-    <div class="wrap section">
-      <p class="eyebrow">Capabilities</p>
-      <h2 id="cap-title">What is in the product today</h2>
-      <div class="cap-grid">
-        @for (c of capabilities; track c.title) {
-          <article class="cap">
-            <div class="cap-head">
-              <h3>{{ c.title }}</h3>
-              <span class="status" [class.live]="c.status === 'Live'">{{ c.status }}</span>
-            </div>
-            <p>{{ c.body }}</p>
-          </article>
+  <section id="product" class="section tour-section" aria-labelledby="tour-title">
+    <div class="wrap">
+      <p class="kicker">Product</p>
+      <h2 id="tour-title">The whole review loop in one place</h2>
+      <div class="tour-tabs" role="tablist" aria-label="Product areas">
+        @for (t of tabs; track t.key) {
+          <button
+            type="button"
+            role="tab"
+            [id]="'tour-tab-' + t.key"
+            [attr.aria-selected]="active() === t.key"
+            [attr.tabindex]="active() === t.key ? 0 : -1"
+            aria-controls="tour-panel"
+            (click)="select(t.key)"
+            (keydown.arrowRight)="move(1)"
+            (keydown.arrowLeft)="move(-1)"
+          >
+            <app-icon [name]="t.icon" [size]="16" /> {{ t.label }}
+          </button>
         }
       </div>
+      @let t = current();
+      <div
+        class="tour-panel"
+        id="tour-panel"
+        role="tabpanel"
+        [attr.aria-labelledby]="'tour-tab-' + t.key"
+      >
+        <div class="tour-text">
+          <h3>{{ t.title }}</h3>
+          <ul>
+            @for (p of t.points; track p) {
+              <li><app-icon name="check" [size]="16" [stroke]="2" /> {{ p }}</li>
+            }
+          </ul>
+          <a routerLink="/demo" class="text-link"
+            >Open it in the demo <app-icon name="arrow-right" [size]="16"
+          /></a>
+        </div>
+        <figure class="tour-shot">
+          <img [src]="t.image" [alt]="t.alt" width="1120" height="640" loading="lazy" decoding="async" />
+        </figure>
+      </div>
     </div>
   </section>
 
-  <section class="wrap section" aria-labelledby="demo-title">
-    <p class="eyebrow">How the demo works</p>
-    <h2 id="demo-title">Your own sandbox, in one click</h2>
-    <ol class="steps">
-      <li>
-        <strong>Start.</strong> We create a private tenant from the seed template: two fictional
-        projects and 15 synthetic documents.
-      </li>
-      <li>
-        <strong>Switch personas.</strong> Act as requester, document controller, reviewers or
-        project manager. The server authorizes every request by the active persona's project role.
-      </li>
-      <li>
-        <strong>Follow the guided task.</strong> Open the HVAC specification, inspect its version
-        history and work through the RFI.
-      </li>
-      <li>
-        <strong>Reset or leave.</strong> "Reset my demo" rebuilds only your workspace; everything is
-        deleted after 24 hours.
-      </li>
-    </ol>
-    <a routerLink="/demo" class="btn primary">Start my workspace</a>
-  </section>
-
-  <section class="band dark" aria-labelledby="proof-title">
-    <div class="wrap section">
-      <p class="eyebrow light">Engineering proof</p>
-      <h2 id="proof-title">Enterprise stack, tested end to end</h2>
-      <div class="proof-grid">
-        <div>
-          <h3>Stack</h3>
-          <ul>
-            <li>Angular 22 standalone components, strict TypeScript, Angular Material</li>
-            <li>ASP.NET Core on .NET 10: controllers → services → EF Core</li>
-            <li>
-              SQL Server 2022: FKs, unique and check constraints, rowversion, a documented
-              review-queue view
-            </li>
-          </ul>
+  <section class="section trust" aria-labelledby="trust-title">
+    <div class="wrap">
+      <h2 id="trust-title" class="visually-hidden">Built and tested like production software</h2>
+      <div class="tiles">
+        <div class="tile" appReveal>
+          <span class="tile-n">{{ totalTests }}</span>
+          <span class="tile-label">automated tests</span>
+          <span class="tile-sub"
+            >{{ counts.unit }} unit · {{ counts.integration }} on real SQL Server ·
+            {{ counts.angular }} UI · {{ counts.e2e }} end-to-end</span
+          >
         </div>
-        <div>
-          <h3>Security</h3>
-          <ul>
-            <li>Identity cookie auth with antiforgery tokens, same-origin by default</li>
-            <li>Per-project role checks in services; cross-tenant IDs return 404</li>
-            <li>Rate limits, lockout, CSP and security headers</li>
-          </ul>
+        <div class="tile" appReveal>
+          <span class="tile-n">10</span>
+          <span class="tile-label">threats modelled</span>
+          <span class="tile-sub">each with controls and a named test</span>
         </div>
-        <div>
-          <h3>Tests</h3>
-          <ul>
-            <li>
-              {{ counts.unit }} xUnit unit tests and {{ counts.integration }} integration tests on a
-              real SQL Server (Testcontainers)
-            </li>
-            <li>{{ counts.angular }} Angular component and service tests</li>
-            <li>
-              {{ counts.e2e }} Playwright tests: guided scenario, accessibility (axe), mobile,
-              keyboard-only
-            </li>
-          </ul>
-          <a routerLink="/case-study" class="light-link">How it was tested →</a>
+        <div class="tile" appReveal>
+          <span class="tile-n">4</span>
+          <span class="tile-label">project roles</span>
+          <span class="tile-sub">checked on the server for every request</span>
+        </div>
+        <div class="tile" appReveal>
+          <span class="tile-n">2</span>
+          <span class="tile-label">SQL triggers</span>
+          <span class="tile-sub">block edits to stored revisions and audit events</span>
         </div>
       </div>
+      <p class="trust-link">
+        <a routerLink="/case-study">How it was built and tested <app-icon name="arrow-right" [size]="16" /></a>
+      </p>
+    </div>
+  </section>
+
+  <section class="cta-band" aria-labelledby="cta-title">
+    <div class="wrap cta-inner">
+      <div>
+        <h2 id="cta-title">See it with a fictional project.</h2>
+        <p>One click, no sign-up. Switch between five roles.</p>
+      </div>
+      <a routerLink="/demo" class="btn btn-primary btn-lg">Start the demo</a>
     </div>
   </section>
 </main>
