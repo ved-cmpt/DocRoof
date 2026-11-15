@@ -1,11 +1,6 @@
-import { DatePipe } from '@angular/common';
 import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
-import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ApiService } from '../../core/api.service';
@@ -19,109 +14,126 @@ import {
   RfiQuery,
 } from '../../core/api.models';
 import { problemMessage } from '../../core/http';
-import { label, tone } from '../../core/labels';
+import { label } from '../../core/labels';
 import { SessionService } from '../../core/session.service';
 import { WalkthroughService } from '../../core/walkthrough.service';
-import { RfiCreateDialogComponent } from './rfi-create-dialog.component';
+import { TopbarComponent } from '../../layout/topbar.component';
+import { openDialog } from '../../shared/dialog';
+import {
+  EmptyStateComponent,
+  FilterChipComponent,
+  FilterOption,
+  IconComponent,
+  PagerComponent,
+  PersonComponent,
+  ShortDatePipe,
+  SkeletonRowsComponent,
+  StatusChipComponent,
+} from '../../shared/ui';
+import { RfiCreateData, RfiCreateDialogComponent } from './rfi-create-dialog.component';
 
 @Component({
   selector: 'app-rfi-list',
   imports: [
     FormsModule,
     RouterLink,
-    DatePipe,
-    MatButtonModule,
-    MatInputModule,
-    MatSelectModule,
-    MatPaginatorModule,
+    TopbarComponent,
+    IconComponent,
+    FilterChipComponent,
+    PagerComponent,
+    StatusChipComponent,
+    PersonComponent,
+    SkeletonRowsComponent,
+    EmptyStateComponent,
+    ShortDatePipe,
   ],
   template: `
+    <app-topbar title="RFIs">
+      @if (canCreate()) {
+        <button type="button" class="btn btn-primary" (click)="create()" aria-label="New RFI">
+          <app-icon name="plus" [size]="16" /><span class="btn-text">New RFI</span>
+        </button>
+      }
+    </app-topbar>
     <div class="page">
-      <div class="page-header">
-        <div>
-          <p class="eyebrow">{{ session.project()?.code }} · Requests for information</p>
-          <h1>RFIs</h1>
-          <p>Every RFI cites the exact revision and page it is about.</p>
-        </div>
-        @if (canCreate()) {
-          <button mat-flat-button (click)="create()">New RFI</button>
-        }
-      </div>
-
-      <section class="panel filters" aria-label="Filters">
-        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search">
-          <mat-label>Search reference or subject</mat-label>
-          <input
-            matInput
-            type="search"
-            [ngModel]="query().search ?? ''"
-            (ngModelChange)="onSearch($event)"
-          />
-        </mat-form-field>
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>State</mat-label>
-          <mat-select [value]="query().state ?? ''" (selectionChange)="set('state', $event.value)">
-            <mat-option value="">All states</mat-option>
-            @for (s of states; track s) {
-              <mat-option [value]="s">{{ label(s) }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Assignee</mat-label>
-          <mat-select
-            [value]="query().assignee ?? ''"
-            (selectionChange)="set('assignee', $event.value)"
-          >
-            <mat-option value="">Anyone</mat-option>
-            <mat-option value="me">Assigned to me</mat-option>
-            @for (m of reviewers(); track m.userId) {
-              <mat-option [value]="m.userId">{{ m.displayName }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Due</mat-label>
-          <mat-select [value]="query().due ?? ''" (selectionChange)="set('due', $event.value)">
-            <mat-option value="">Any due date</mat-option>
-            <mat-option value="overdue">Overdue</mat-option>
-            <mat-option value="week">Due in 7 days</mat-option>
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Discipline</mat-label>
-          <mat-select
-            [value]="query().discipline ?? ''"
-            (selectionChange)="set('discipline', $event.value)"
-          >
-            <mat-option value="">All disciplines</mat-option>
-            @for (d of disciplines; track d) {
-              <mat-option [value]="d">{{ label(d) }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-      </section>
-
-      <section class="panel" aria-labelledby="rfi-results" [attr.aria-busy]="loading()">
+      <section class="card" aria-labelledby="rfi-results" [attr.aria-busy]="loading()">
         <h2 id="rfi-results" class="visually-hidden">RFI list</h2>
+        <div class="toolbar" role="toolbar" aria-label="Filters">
+          <div class="search-box">
+            <app-icon name="search" [size]="16" />
+            <input
+              class="input input-sm"
+              type="search"
+              placeholder="Search reference or subject"
+              aria-label="Search reference or subject"
+              [ngModel]="query().search ?? ''"
+              (ngModelChange)="onSearch($event)"
+            />
+          </div>
+          <app-filter-chip
+            label="State"
+            [options]="stateOptions"
+            [value]="query().state"
+            (valueChange)="set('state', $any($event))"
+          />
+          <app-filter-chip
+            label="Assignee"
+            [options]="assigneeOptions()"
+            [value]="query().assignee"
+            allLabel="Anyone"
+            (valueChange)="set('assignee', $event)"
+          />
+          <app-filter-chip
+            label="Due"
+            [options]="dueOptions"
+            [value]="query().due"
+            allLabel="Any date"
+            (valueChange)="set('due', $any($event))"
+          />
+          <app-filter-chip
+            label="Discipline"
+            [options]="disciplineOptions"
+            [value]="query().discipline"
+            (valueChange)="set('discipline', $any($event))"
+          />
+          @if (activeFilters() > 0) {
+            <button type="button" class="btn btn-ghost btn-sm" (click)="clear()">
+              Clear <span class="filter-badge">{{ activeFilters() }}</span>
+            </button>
+          }
+          <span class="count">
+            @if (result(); as r) {
+              {{ r.totalCount }} {{ r.totalCount === 1 ? 'RFI' : 'RFIs' }}
+            }
+          </span>
+        </div>
+
         @if (error()) {
-          <div class="panel-pad">
-            <div class="error-box" role="alert">{{ error() }}</div>
-          </div>
+          <app-empty icon="triangle-alert" heading="RFIs could not be loaded" [text]="error()">
+            <button type="button" class="btn btn-secondary" (click)="retry()">Try again</button>
+          </app-empty>
         } @else if (loading() && !result()) {
-          <div class="panel-pad stack" role="status" aria-label="Loading RFIs">
-            <span class="skeleton"></span><span class="skeleton"></span
-            ><span class="skeleton"></span>
-          </div>
+          <app-skeleton-rows label="Loading RFIs" [widths]="[8, 34, 10, 18, 14, 8]" />
         } @else if (result(); as r) {
           @if (r.items.length === 0) {
-            <div class="state-box">
-              <h3>No RFIs match</h3>
-              <p>Adjust the filters or raise a new RFI.</p>
-            </div>
+            <app-empty
+              icon="message-square-text"
+              heading="No RFIs match"
+              [text]="
+                activeFilters() > 0
+                  ? 'Try removing a filter.'
+                  : 'Raise the first RFI from a document page.'
+              "
+            >
+              @if (activeFilters() > 0) {
+                <button type="button" class="btn btn-secondary" (click)="clear()">
+                  Clear filters
+                </button>
+              }
+            </app-empty>
           } @else {
-            <div class="table-scroll">
-              <table class="data-table">
+            <div class="table-wrap">
+              <table class="table">
                 <caption class="visually-hidden">
                   RFIs,
                   {{
@@ -136,41 +148,39 @@ import { RfiCreateDialogComponent } from './rfi-create-dialog.component';
                     <th scope="col">State</th>
                     <th scope="col">Cites</th>
                     <th scope="col">Assignee</th>
-                    <th scope="col">Due</th>
+                    <th scope="col" class="num-cell">Due</th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (x of r.items; track x.id) {
-                    <tr>
-                      <td class="mono">
-                        <a [routerLink]="['/app/rfis', x.id]">{{ x.referenceNumber }}</a>
-                      </td>
+                    <tr class="clickable" (click)="open(x.id, $event)">
                       <td>
-                        {{ x.subject
-                        }}<span class="small muted block">{{ label(x.discipline) }}</span>
+                        <a class="cell-link doc-num" [routerLink]="['/app/rfis', x.id]">{{
+                          x.referenceNumber
+                        }}</a>
                       </td>
-                      <td>
-                        <span [class]="'chip ' + tone(x.state)">{{ label(x.state) }}</span>
+                      <td class="title-cell">
+                        {{ x.subject }}<span class="sub">{{ label(x.discipline) }}</span>
                       </td>
-                      <td class="small">
-                        <span class="mono"
-                          >{{ x.citation.documentNumber }} {{ x.citation.versionLabel }} p.{{
+                      <td><app-status [value]="x.state" /></td>
+                      <td class="nowrap">
+                        <span class="cite"
+                          >{{ x.citation.documentNumber }} · {{ x.citation.versionLabel }} · p.{{
                             x.citation.page
                           }}</span
                         >
                         @if (x.citation.newerRevisionExists) {
-                          <span class="chip warn plain">Newer rev</span>
+                          <app-status value="Newer rev" tone="warning" />
                         }
                       </td>
-                      <td>{{ x.assignee?.displayName ?? '—' }}</td>
-                      <td class="small">
-                        @if (x.dueAt) {
-                          {{ x.dueAt | date: 'mediumDate' }}
-                        } @else {
-                          —
-                        }
+                      <td>
+                        <app-person [name]="x.assignee?.displayName" fallback="Unassigned" />
+                      </td>
+                      <td class="num-cell">
                         @if (x.isOverdue) {
-                          <span class="overdue-badge">Overdue {{ x.daysOverdue }}d</span>
+                          <app-status value="Overdue" [label]="'Overdue ' + x.daysOverdue + ' d'" />
+                        } @else {
+                          <span class="text-2">{{ x.dueAt ? (x.dueAt | shortDate) : '—' }}</span>
                         }
                       </td>
                     </tr>
@@ -178,41 +188,26 @@ import { RfiCreateDialogComponent } from './rfi-create-dialog.component';
                 </tbody>
               </table>
             </div>
-            <mat-paginator
-              [length]="r.totalCount"
-              [pageIndex]="r.page - 1"
-              [pageSize]="r.pageSize"
-              [pageSizeOptions]="[10, 20, 50]"
-              (page)="onPage($event)"
-              aria-label="RFI pages"
-            />
+            @if (r.totalCount > r.pageSize) {
+              <app-pager
+                [page]="r.page"
+                [pageSize]="r.pageSize"
+                [total]="r.totalCount"
+                ariaLabel="RFI pages"
+                (pageChange)="setPage($event)"
+              />
+            }
           }
         }
       </section>
     </div>
   `,
   styles: `
-    .filters {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      padding: 14px;
-      margin-bottom: 16px;
-    }
-    .filters mat-form-field {
-      width: 190px;
-    }
-    .filters .search {
-      width: 260px;
-    }
-    .block {
-      display: block;
-    }
-    @media (max-width: 700px) {
-      .filters mat-form-field,
-      .filters .search {
-        width: 100%;
-      }
+    .cite {
+      font-family: var(--font-mono);
+      font-size: var(--fs-12);
+      color: var(--text-2);
+      margin-right: 6px;
     }
   `,
 })
@@ -223,16 +218,32 @@ export class RfiListPage {
   private readonly router = inject(Router);
   private readonly tour = inject(WalkthroughService);
   protected readonly label = label;
-  protected readonly tone = tone;
-  protected readonly states = RFI_STATES;
-  protected readonly disciplines = DISCIPLINES;
+  protected readonly stateOptions: FilterOption[] = RFI_STATES.map((v) => ({
+    value: v,
+    label: label(v),
+  }));
+  protected readonly disciplineOptions: FilterOption[] = DISCIPLINES.map((v) => ({
+    value: v,
+    label: label(v),
+  }));
+  protected readonly dueOptions: FilterOption[] = [
+    { value: 'overdue', label: 'Overdue' },
+    { value: 'week', label: 'Due in 7 days' },
+  ];
 
   protected readonly query = signal<RfiQuery>({ page: 1, pageSize: 20 });
   protected readonly result = signal<Paged<RfiListItem> | null>(null);
   protected readonly members = signal<Member[]>([]);
-  protected readonly reviewers = computed(() =>
-    this.members().filter((m) => m.role === 'Reviewer'),
-  );
+  protected readonly assigneeOptions = computed<FilterOption[]>(() => [
+    { value: 'me', label: 'Assigned to me' },
+    ...this.members()
+      .filter((m) => m.role === 'Reviewer')
+      .map((m) => ({ value: m.userId, label: m.displayName })),
+  ]);
+  protected readonly activeFilters = computed(() => {
+    const q = this.query();
+    return [q.search, q.state, q.assignee, q.due, q.discipline].filter((v) => !!v).length;
+  });
   protected readonly loading = signal(true);
   protected readonly error = signal('');
   protected readonly canCreate = computed(
@@ -279,13 +290,27 @@ export class RfiListPage {
     this.query.update((q) => ({ ...q, [key]: value, page: 1 }));
   }
 
+  protected setPage(page: number): void {
+    this.query.update((q) => ({ ...q, page }));
+  }
+
   protected onSearch(value: string): void {
     clearTimeout(this.timer);
     this.timer = setTimeout(() => this.set('search', value.trim()), 300);
   }
 
-  protected onPage(e: PageEvent): void {
-    this.query.update((q) => ({ ...q, page: e.pageIndex + 1, pageSize: e.pageSize }));
+  protected clear(): void {
+    this.query.set({ page: 1, pageSize: this.query().pageSize });
+  }
+
+  protected retry(): void {
+    this.query.update((q) => ({ ...q }));
+  }
+
+  protected open(id: string, event: MouseEvent): void {
+    if (!(event.target as HTMLElement).closest('a, button')) {
+      void this.router.navigate(['/app/rfis', id]);
+    }
   }
 
   protected create(): void {
@@ -293,13 +318,13 @@ export class RfiListPage {
     if (!project) {
       return;
     }
-    this.dialog
-      .open(RfiCreateDialogComponent, {
-        data: { projectId: project.id },
-        autoFocus: 'first-tabbable',
-      })
+    openDialog<RfiCreateDialogComponent, RfiCreateData, RfiDetail>(
+      this.dialog,
+      RfiCreateDialogComponent,
+      { projectId: project.id },
+    )
       .afterClosed()
-      .subscribe((rfi?: RfiDetail) => {
+      .subscribe((rfi) => {
         if (rfi) {
           this.tour.mark('create-rfi', rfi.id);
           void this.router.navigate(['/app/rfis', rfi.id]);
