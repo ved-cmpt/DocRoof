@@ -1,0 +1,13 @@
+**/bin
+**/obj
+**/node_modules
+**/.angular
+**/dist
+web/test-results
+web/playwright-report
+data
+.git
+.local
+.env
+*.md
+!README.md

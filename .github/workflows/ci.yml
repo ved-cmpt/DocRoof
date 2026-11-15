@@ -1,0 +1,120 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  backend:
+    name: Backend (build, format, unit + integration tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore api/DocRoof.slnx
+      - run: dotnet format api/DocRoof.slnx --verify-no-changes --no-restore
+      - run: dotnet build api/DocRoof.slnx --no-restore -c Release
+      # Integration tests start SQL Server 2022 with Testcontainers (Docker is available on ubuntu runners).
+      - run: dotnet test api/DocRoof.slnx --no-build -c Release --logger "trx;LogFilePrefix=results" --results-directory TestResults
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results
+          path: TestResults
+
+  frontend:
+    name: Frontend (lint, format, test, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test -- --watch=false
+      - run: npm run build
+
+  e2e:
+    name: End-to-end (Playwright smoke)
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    env:
+      MSSQL_SA_PASSWORD: ${{ secrets.CI_MSSQL_SA_PASSWORD || 'DocRoof_CI_Only_2026!' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Start SQL Server
+        run: |
+          docker compose up -d sql
+          for i in $(seq 1 60); do
+            [ "$(docker inspect -f '{{.State.Health.Status}}' docroof-sql)" = "healthy" ] && break
+            sleep 3
+          done
+      - name: Start API
+        env:
+          ASPNETCORE_ENVIRONMENT: Development
+          ConnectionStrings__DocRoof: Server=127.0.0.1,14330;Database=DocRoof;User Id=sa;Password=${{ env.MSSQL_SA_PASSWORD }};TrustServerCertificate=True;Encrypt=True
+        run: |
+          dotnet run --project api/src/DocRoof.Api --launch-profile http > api.log 2>&1 &
+          for i in $(seq 1 90); do curl -sf http://localhost:5180/health/ready && break; sleep 2; done
+      - name: Install web dependencies and browsers
+        working-directory: web
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Start web dev server
+        working-directory: web
+        run: |
+          npx ng serve --port 4210 > ../web.log 2>&1 &
+          for i in $(seq 1 90); do curl -sf http://localhost:4210 > /dev/null && break; sleep 2; done
+      - name: Playwright
+        working-directory: web
+        run: npx playwright test --project=chromium
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-artifacts
+          path: |
+            web/playwright-report
+            web/test-results
+            api.log
+            web.log
+
+  ci-ok:
+    name: ci-ok
+    runs-on: ubuntu-latest
+    needs: [backend, frontend, e2e]
+    if: always()
+    steps:
+      - name: All required jobs passed
+        run: |
+          [ "${{ needs.backend.result }}" = "success" ] && [ "${{ needs.frontend.result }}" = "success" ] && [ "${{ needs.e2e.result }}" = "success" ]

@@ -1,0 +1,15 @@
+# Build output
+bin/
+obj/
+[Tt]est[Rr]esults/
+*.user
+.vs/
+.idea/
+
+# Local data and secrets
+.env
+data/
+*.log
+
+# Frontend (see also web/.gitignore)
+node_modules/
