@@ -1,0 +1,78 @@
+:host {
+  display: block;
+  background: var(--paper);
+}
+
+main {
+  outline: none;
+}
+
+.wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.cs-hero {
+  background: var(--ink);
+  color: #d4dde7;
+  padding: 56px 0;
+
+  h1 {
+    color: #fff;
+    font-size: clamp(1.9rem, 3.5vw, 2.7rem);
+  }
+}
+
+.eyebrow.light {
+  color: var(--amber);
+}
+
+.lead {
+  font-size: 1.1rem;
+}
+
+.status-box {
+  margin-top: 20px;
+  padding: 14px 18px;
+  border-radius: 8px;
+  background: rgb(245 165 36 / 12%);
+  border: 1px solid rgb(245 165 36 / 45%);
+  color: #f3e3c4;
+
+  code {
+    color: #fff;
+  }
+}
+
+.body section {
+  padding: 28px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.body ul li {
+  margin-bottom: 6px;
+}
+
+.diagram {
+  margin: 16px 0 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--concrete);
+
+  svg {
+    width: 100%;
+    height: auto;
+  }
+}
+
+.btn.primary {
+  display: inline-block;
+  padding: 12px 20px;
+  border-radius: 6px;
+  background: var(--amber);
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: none;
+}

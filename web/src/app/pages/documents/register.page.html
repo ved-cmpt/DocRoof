@@ -1,0 +1,194 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">{{ session.project()?.code }} · Controlled documents</p>
+      <h1>Document register</h1>
+      <p>
+        Current revisions are highlighted; superseded revisions stay available for traceability.
+      </p>
+    </div>
+    @if (canUpload()) {
+      <button mat-flat-button (click)="newDocument()">New document</button>
+    }
+  </div>
+
+  <section class="panel filters" aria-label="Filters">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search">
+      <mat-label>Search number or title</mat-label>
+      <input
+        matInput
+        type="search"
+        [ngModel]="query().search ?? ''"
+        (ngModelChange)="onSearch($event)"
+      />
+    </mat-form-field>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Discipline</mat-label>
+      <mat-select
+        [value]="query().discipline ?? ''"
+        (selectionChange)="set('discipline', $event.value)"
+      >
+        <mat-option value="">All disciplines</mat-option>
+        @for (d of disciplines; track d) {
+          <mat-option [value]="d">{{ label(d) }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Status</mat-label>
+      <mat-select [value]="query().status ?? ''" (selectionChange)="set('status', $event.value)">
+        <mat-option value="">All statuses</mat-option>
+        @for (s of statuses; track s) {
+          <mat-option [value]="s">{{ label(s) }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Category</mat-label>
+      <mat-select
+        [value]="query().category ?? ''"
+        (selectionChange)="set('category', $event.value)"
+      >
+        <mat-option value="">All categories</mat-option>
+        @for (c of categories; track c) {
+          <mat-option [value]="c">{{ label(c) }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Review status</mat-label>
+      <mat-select
+        [value]="query().approvalStatus ?? ''"
+        (selectionChange)="set('approvalStatus', $event.value)"
+      >
+        <mat-option value="">Any review status</mat-option>
+        @for (a of approvals; track a) {
+          <mat-option [value]="a">{{ label(a) }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="narrow">
+      <mat-label>Has revision</mat-label>
+      <input
+        matInput
+        [ngModel]="query().revision ?? ''"
+        (change)="set('revision', $any($event.target).value)"
+        placeholder="R1"
+      />
+    </mat-form-field>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Sort</mat-label>
+      <mat-select [value]="query().sort" (selectionChange)="set('sort', $event.value)">
+        <mat-option value="-updated">Recently updated</mat-option>
+        <mat-option value="number">Number A–Z</mat-option>
+        <mat-option value="-number">Number Z–A</mat-option>
+        <mat-option value="title">Title A–Z</mat-option>
+      </mat-select>
+    </mat-form-field>
+    @if (hasFilters()) {
+      <button mat-button (click)="clearFilters()">Clear filters</button>
+    }
+  </section>
+
+  <section class="panel" aria-labelledby="results-title" [attr.aria-busy]="loading()">
+    <h2 id="results-title" class="visually-hidden">Documents</h2>
+    @if (error()) {
+      <div class="panel-pad">
+        <div class="error-box" role="alert">{{ error() }}</div>
+        <button mat-button (click)="retry()">Retry</button>
+      </div>
+    } @else if (loading() && !result()) {
+      <div class="panel-pad stack" role="status" aria-label="Loading documents">
+        @for (i of [1, 2, 3, 4, 5]; track i) {
+          <span class="skeleton"></span>
+        }
+      </div>
+    } @else if (result(); as r) {
+      @if (r.items.length === 0) {
+        <div class="state-box">
+          <h3>No documents match</h3>
+          <p>
+            {{
+              hasFilters()
+                ? 'Try clearing a filter.'
+                : 'Upload the first controlled document for this project.'
+            }}
+          </p>
+        </div>
+      } @else {
+        <div class="table-scroll">
+          <table class="data-table">
+            <caption class="visually-hidden">
+              Controlled documents,
+              {{
+                r.totalCount
+              }}
+              total
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Number</th>
+                <th scope="col">Title</th>
+                <th scope="col">Discipline</th>
+                <th scope="col">Status</th>
+                <th scope="col">Revisions</th>
+                <th scope="col">Review</th>
+                <th scope="col">Updated</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (d of r.items; track d.id) {
+                <tr>
+                  <td class="mono num">
+                    <a [routerLink]="['/app/documents', d.id]">{{ d.documentNumber }}</a>
+                  </td>
+                  <td>
+                    {{ d.title }}
+                    <span class="cat small muted">{{ label(d.category) }}</span>
+                  </td>
+                  <td>{{ label(d.discipline) }}</td>
+                  <td>
+                    <span class="chip" [class]="'chip ' + tone(d.status)">{{
+                      label(d.status)
+                    }}</span>
+                  </td>
+                  <td>
+                    <span class="revs">
+                      @for (rev of d.revisions; track rev.id) {
+                        <span
+                          class="rev-chip"
+                          [class.current]="rev.isCurrent"
+                          [attr.title]="rev.isCurrent ? 'Current revision' : 'Superseded revision'"
+                          >{{ rev.versionLabel
+                          }}<span class="visually-hidden">{{
+                            rev.isCurrent ? ' (current)' : ' (superseded)'
+                          }}</span></span
+                        >
+                      }
+                    </span>
+                  </td>
+                  <td>
+                    @if (d.currentApprovalStatus) {
+                      <span [class]="'chip ' + tone(d.currentApprovalStatus)">{{
+                        label(d.currentApprovalStatus)
+                      }}</span>
+                    }
+                  </td>
+                  <td class="small muted">{{ d.updatedAt | date: 'mediumDate' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <mat-paginator
+          [length]="r.totalCount"
+          [pageIndex]="r.page - 1"
+          [pageSize]="r.pageSize"
+          [pageSizeOptions]="[10, 20, 50]"
+          (page)="onPage($event)"
+          aria-label="Document pages"
+        />
+      }
+    }
+  </section>
+</div>

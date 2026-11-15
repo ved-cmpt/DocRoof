@@ -1,0 +1,198 @@
+<app-public-header />
+<main id="main" tabindex="-1" class="cs">
+  <header class="cs-hero">
+    <div class="wrap">
+      <p class="eyebrow light">Case study</p>
+      <h1>DocRoof: document governance for construction projects</h1>
+      <p class="lead">
+        An independent portfolio project exploring how a construction company's document control
+        could be built with Angular, ASP.NET Core and SQL Server — with the business rules enforced
+        where they belong: on the server and in the database.
+      </p>
+      <div class="status-box" role="note">
+        <strong>Project status: Phase 1 of 3 complete.</strong>
+        Foundation and the document vertical slice (auth, schema, storage, register, revisions,
+        guest demo) are built and tested. RFI/submittal workflows (Phase 2) and extraction,
+        hardening and deployment (Phase 3) are in progress. Measured test results are recorded in
+        <code>docs/STATUS.md</code> in the repository.
+      </div>
+    </div>
+  </header>
+
+  <article class="wrap body">
+    <section aria-labelledby="problem">
+      <h2 id="problem">The problem</h2>
+      <p>
+        On a building project, hundreds of drawings and specifications change over months. Site
+        teams need the current revision; reviewers need to know which revision a question refers to;
+        managers need to prove who approved what. When this lives in email threads and shared
+        folders, superseded documents get built from and approvals are hard to trace.
+      </p>
+    </section>
+
+    <section aria-labelledby="users">
+      <h2 id="users">Users and roles</h2>
+      <table class="data-table">
+        <caption class="visually-hidden">
+          Roles
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Role (per project)</th>
+            <th scope="col">Responsibilities</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Document Controller</th>
+            <td>Uploads, organizes, versions and distributes records.</td>
+          </tr>
+          <tr>
+            <th scope="row">Project Manager</th>
+            <td>Creates projects, approves RFI answers, resolves escalations.</td>
+          </tr>
+          <tr>
+            <th scope="row">Reviewer</th>
+            <td>Decides assigned submittals and answers assigned RFIs.</td>
+          </tr>
+          <tr>
+            <th scope="row">Requester</th>
+            <td>Creates RFIs and sees responses.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section aria-labelledby="rules">
+      <h2 id="rules">Business rules enforced today</h2>
+      <ul>
+        <li>Document numbers are unique per project; revision labels are unique per document.</li>
+        <li>
+          A revision's content columns can never change after insert (service check, EF Core
+          interceptor, SQL trigger).
+        </li>
+        <li>
+          Uploads are accepted only when their first bytes match an allowed type (PDF, TXT, PNG,
+          JPG) and size limit.
+        </li>
+        <li>
+          Files are stored under generated keys; user file names are only shown, sanitized, never
+          used as paths.
+        </li>
+        <li>
+          Accessing another tenant's or project's records returns 404, so existence is not leaked.
+        </li>
+        <li>Audit events are append-only and written in the same transaction as the change.</li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="arch">
+      <h2 id="arch">Architecture</h2>
+      <p>
+        A modular monolith: the Angular app calls the ASP.NET Core REST API over HTTPS, the API's
+        services enforce validation, authorization and transactions, and EF Core talks to SQL
+        Server. In production the API also serves the built Angular files, so the auth cookie stays
+        first-party.
+      </p>
+      <figure class="diagram">
+        <svg viewBox="0 0 760 170" role="img" aria-labelledby="arch-svg-title">
+          <title id="arch-svg-title">
+            Request flow: browser to Angular app to ASP.NET Core API to SQL Server and file storage
+          </title>
+          <g font-family="Inter, sans-serif" font-size="13">
+            <rect
+              x="10"
+              y="50"
+              width="150"
+              height="70"
+              rx="8"
+              fill="#fff"
+              stroke="#1b2a3d"
+              stroke-width="2"
+            />
+            <text x="85" y="80" text-anchor="middle" font-weight="700">Browser</text>
+            <text x="85" y="100" text-anchor="middle">Angular SPA</text>
+            <rect x="230" y="30" width="230" height="110" rx="8" fill="#1b2a3d" />
+            <text x="345" y="62" text-anchor="middle" fill="#fff" font-weight="700">
+              ASP.NET Core API
+            </text>
+            <text x="345" y="84" text-anchor="middle" fill="#c6d0db">Controllers → Services</text>
+            <text x="345" y="104" text-anchor="middle" fill="#c6d0db">
+              Auth · Antiforgery · Audit
+            </text>
+            <text x="345" y="124" text-anchor="middle" fill="#c6d0db">EF Core</text>
+            <rect
+              x="540"
+              y="20"
+              width="200"
+              height="56"
+              rx="8"
+              fill="#fff"
+              stroke="#1f5fbf"
+              stroke-width="2"
+            />
+            <text x="640" y="53" text-anchor="middle" font-weight="700">SQL Server 2022</text>
+            <rect
+              x="540"
+              y="96"
+              width="200"
+              height="56"
+              rx="8"
+              fill="#fff"
+              stroke="#f5a524"
+              stroke-width="2"
+            />
+            <text x="640" y="122" text-anchor="middle" font-weight="700">File storage</text>
+            <text x="640" y="140" text-anchor="middle" font-size="11">
+              Local disk or SQL varbinary
+            </text>
+            <path d="M160 85h62" stroke="#1b2a3d" stroke-width="2" marker-end="url(#a)" />
+            <path d="M460 60h72" stroke="#1b2a3d" stroke-width="2" marker-end="url(#a)" />
+            <path d="M460 115h72" stroke="#1b2a3d" stroke-width="2" marker-end="url(#a)" />
+            <text x="192" y="75" text-anchor="middle" font-size="11">HTTPS</text>
+          </g>
+          <defs>
+            <marker
+              id="a"
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="7"
+              markerHeight="7"
+              orient="auto"
+            >
+              <path d="M0 0 10 5 0 10z" fill="#1b2a3d" />
+            </marker>
+          </defs>
+        </svg>
+      </figure>
+    </section>
+
+    <section aria-labelledby="why">
+      <h2 id="why">Why this stack fits an enterprise construction team</h2>
+      <p>
+        Construction companies commonly run Microsoft-centred estates: SQL Server for project and
+        financial data, .NET services behind the firewall, and browser front-ends for field and
+        office staff. DocRoof uses that same stack and patterns a team would expect to maintain:
+        typed REST contracts, migrations under version control, constraints in the database, and
+        automated tests that run against a real SQL Server.
+      </p>
+    </section>
+
+    <section aria-labelledby="limits">
+      <h2 id="limits">Known limitations (current)</h2>
+      <ul>
+        <li>No malware scanning of uploads; type sniffing and size limits only.</li>
+        <li>No OCR: image-only PDFs are shown with a "no text layer" notice.</li>
+        <li>No hosted deployment yet; the owner must provide accounts (see docs/OWNER_TODO.md).</li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="demo">
+      <h2 id="demo">Try it</h2>
+      <p>The guest demo creates a private workspace with fictional data. No account is needed.</p>
+      <a routerLink="/demo" class="btn primary">Start the demo</a>
+    </section>
+  </article>
+</main>
+<app-public-footer />

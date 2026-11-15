@@ -1,0 +1,87 @@
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a routerLink="/app/documents" class="brand" aria-label="DocRoof workspace home">
+      <app-logo [size]="28" />
+      <span>DocRoof</span>
+    </a>
+
+    @if (session.projects().length > 0) {
+      <mat-form-field class="project-select" appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Project</mat-label>
+        <mat-select
+          [value]="session.project()?.id"
+          (selectionChange)="onProject($event.value)"
+          panelClass="project-panel"
+        >
+          @for (p of session.projects(); track p.id) {
+            <mat-option [value]="p.id">{{ p.code }} · {{ p.title }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
+
+    <nav class="main-nav" aria-label="Workspace">
+      @for (item of nav; track item.path) {
+        <a [routerLink]="item.path" routerLinkActive="active" ariaCurrentWhenActive="page">{{
+          item.label
+        }}</a>
+      }
+    </nav>
+
+    <span class="spacer"></span>
+
+    @if (session.isGuest()) {
+      <button
+        mat-stroked-button
+        class="persona-btn"
+        [matMenuTriggerFor]="personaMenu"
+        [disabled]="busy()"
+        aria-label="Switch demo persona"
+      >
+        <span class="persona-dot" aria-hidden="true"></span>
+        {{ session.me()?.displayName }}
+        <span class="persona-role">{{ label(session.role()) }}</span>
+      </button>
+      <mat-menu #personaMenu="matMenu" xPosition="before">
+        <div class="menu-caption">Switch persona (this demo workspace only)</div>
+        @for (p of personas(); track p.key) {
+          <button
+            mat-menu-item
+            (click)="switchPersona(p)"
+            [attr.aria-current]="p.isActive ? 'true' : null"
+          >
+            <strong>{{ p.displayName }}</strong>
+            <span class="menu-sub">{{ p.jobTitle }}{{ p.isActive ? ' · current' : '' }}</span>
+          </button>
+        }
+      </mat-menu>
+    }
+
+    <button mat-button class="user-btn" [matMenuTriggerFor]="userMenu" aria-label="Account menu">
+      {{ session.isGuest() ? 'Demo' : session.me()?.displayName }}
+    </button>
+    <mat-menu #userMenu="matMenu" xPosition="before">
+      <div class="menu-caption">{{ session.me()?.tenantName }}</div>
+      @if (session.isGuest()) {
+        <button mat-menu-item (click)="resetDemo()">Reset my demo</button>
+      }
+      <a mat-menu-item routerLink="/">Public site</a>
+      <button mat-menu-item (click)="logout()">Sign out</button>
+    </mat-menu>
+  </div>
+</header>
+
+@if (session.isGuest()) {
+  <div class="guest-banner" role="status">
+    <span>
+      <strong>Guest workspace.</strong> Private to you, seeded with fictional data, deleted
+      automatically in {{ expiresIn() }}.
+    </span>
+    <button mat-button (click)="resetDemo()" [disabled]="busy()">Reset my demo</button>
+  </div>
+}
+
+<main id="main" tabindex="-1">
+  <router-outlet />
+</main>
