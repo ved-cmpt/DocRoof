@@ -1,14 +1,12 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { CATEGORIES, DISCIPLINES } from '../../core/api.models';
 import { problemMessage } from '../../core/http';
 import { fileSize, label } from '../../core/labels';
+import { IconComponent } from '../../shared/ui';
 
 export interface UploadDialogData {
   mode: 'document' | 'revision';
@@ -42,128 +40,200 @@ export function precheckFile(file: File | null): string | null {
 
 @Component({
   selector: 'app-upload-dialog',
-  imports: [ReactiveFormsModule, MatDialogModule, MatButtonModule, MatInputModule, MatSelectModule],
+  imports: [ReactiveFormsModule, MatDialogModule, IconComponent],
   template: `
-    <h2 mat-dialog-title>
-      {{
-        data.mode === 'document'
-          ? 'New controlled document'
-          : 'Upload new revision of ' + data.documentNumber
-      }}
-    </h2>
-    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      <mat-dialog-content class="fields">
+    <form class="dlg" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <header class="dlg-head">
+        <div>
+          <h2 mat-dialog-title>
+            {{ data.mode === 'document' ? 'Upload document' : 'Upload new revision' }}
+          </h2>
+          <p>
+            {{
+              data.mode === 'document'
+                ? 'Creates a controlled document with its first revision.'
+                : data.documentNumber + ' · earlier revisions stay unchanged.'
+            }}
+          </p>
+        </div>
+        <button type="button" class="btn btn-icon" mat-dialog-close aria-label="Close">
+          <app-icon name="x" />
+        </button>
+      </header>
+
+      <div class="dlg-body form-grid">
         @if (data.mode === 'document') {
-          <mat-form-field appearance="outline">
-            <mat-label>Document number</mat-label>
+          <div class="field">
+            <label class="field-label" for="up-number">Document number</label>
             <input
-              matInput
+              id="up-number"
+              class="input mono"
               formControlName="documentNumber"
-              placeholder="e.g. MCC-M-23 07 00"
-              required
+              placeholder="MCC-M-23 07 00"
+              autocomplete="off"
             />
-            <mat-error>Document number is required (2–60 characters).</mat-error>
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Title</mat-label>
-            <input matInput formControlName="title" required />
-            <mat-error>Title is required.</mat-error>
-          </mat-form-field>
-          <div class="pair">
-            <mat-form-field appearance="outline">
-              <mat-label>Discipline</mat-label>
-              <mat-select formControlName="discipline" required>
+            @if (invalid('documentNumber')) {
+              <p class="field-error">Enter 2–60 characters.</p>
+            }
+          </div>
+          <div class="field">
+            <label class="field-label" for="up-title">Title</label>
+            <input id="up-title" class="input" formControlName="title" autocomplete="off" />
+            @if (invalid('title')) {
+              <p class="field-error">Title is required.</p>
+            }
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label" for="up-discipline">Discipline</label>
+              <select id="up-discipline" class="select" formControlName="discipline">
+                <option value="" disabled>Choose…</option>
                 @for (d of disciplines; track d) {
-                  <mat-option [value]="d">{{ label(d) }}</mat-option>
+                  <option [value]="d">{{ label(d) }}</option>
                 }
-              </mat-select>
-              <mat-error>Choose a discipline.</mat-error>
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Category</mat-label>
-              <mat-select formControlName="category" required>
+              </select>
+              @if (invalid('discipline')) {
+                <p class="field-error">Choose a discipline.</p>
+              }
+            </div>
+            <div class="field">
+              <label class="field-label" for="up-category">Category</label>
+              <select id="up-category" class="select" formControlName="category">
+                <option value="" disabled>Choose…</option>
                 @for (c of categories; track c) {
-                  <mat-option [value]="c">{{ label(c) }}</mat-option>
+                  <option [value]="c">{{ label(c) }}</option>
                 }
-              </mat-select>
-              <mat-error>Choose a category.</mat-error>
-            </mat-form-field>
+              </select>
+              @if (invalid('category')) {
+                <p class="field-error">Choose a category.</p>
+              }
+            </div>
           </div>
         }
-        <div class="pair">
-          <mat-form-field appearance="outline">
-            <mat-label>Revision label</mat-label>
+        <div class="form-row">
+          <div class="field">
+            <label class="field-label" for="up-label"
+              >Revision label <span class="optional">(optional)</span></label
+            >
             <input
-              matInput
+              id="up-label"
+              class="input mono"
               formControlName="versionLabel"
               [placeholder]="data.suggestedLabel ?? 'R0'"
+              autocomplete="off"
             />
-            <mat-hint>Leave empty for {{ data.suggestedLabel ?? 'R0' }}</mat-hint>
-            <mat-error>Letters, digits, dots, dashes or spaces (max 20).</mat-error>
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Change note</mat-label>
-            <input matInput formControlName="changeNote" />
-          </mat-form-field>
+            @if (invalid('versionLabel')) {
+              <p class="field-error">Letters, digits, dots, dashes or spaces (max 20).</p>
+            } @else {
+              <span class="field-hint">Empty means {{ data.suggestedLabel ?? 'R0' }}.</span>
+            }
+          </div>
+          <div class="field">
+            <label class="field-label" for="up-note"
+              >Change note <span class="optional">(optional)</span></label
+            >
+            <input id="up-note" class="input" formControlName="changeNote" autocomplete="off" />
+          </div>
         </div>
 
-        <div class="file-field">
-          <label for="upload-file" class="file-label">File (PDF, TXT, PNG or JPG, max 25 MB)</label>
+        <div class="field">
+          <span class="field-label" id="up-file-label">File</span>
           <input
             id="upload-file"
+            class="file-input"
             type="file"
             accept=".pdf,.txt,.png,.jpg,.jpeg"
+            aria-labelledby="up-file-label"
+            aria-describedby="up-file-hint"
             (change)="onFile($event)"
           />
-          @if (file(); as f) {
-            <p class="small muted">{{ f.name }} · {{ size(f.size) }}</p>
-          }
+          <label
+            class="drop"
+            [class.over]="dragging()"
+            [class.has-file]="!!file()"
+            for="upload-file"
+            (dragover)="onDrag($event, true)"
+            (dragleave)="dragging.set(false)"
+            (drop)="onDrop($event)"
+          >
+            <app-icon [name]="file() ? 'file-check' : 'upload'" [size]="20" />
+            @if (file(); as f) {
+              <span class="drop-main">{{ f.name }}</span>
+              <span class="field-hint" id="up-file-hint"
+                >{{ size(f.size) }} · choose another file to replace it</span
+              >
+            } @else {
+              <span class="drop-main"
+                ><span class="link-like">Choose a file</span> or drag it here</span
+              >
+              <span class="field-hint" id="up-file-hint">PDF, TXT, PNG or JPG · up to 25 MB</span>
+            }
+          </label>
         </div>
 
         @if (error()) {
-          <div class="error-box" role="alert">{{ error() }}</div>
+          <div class="alert tone-danger" role="alert">
+            <app-icon name="triangle-alert" [size]="16" />
+            <p>{{ error() }}</p>
+          </div>
         }
-        <p class="small muted">
-          The server checks the file's real type from its first bytes, computes a SHA-256 checksum
-          and stores it under a generated key. Previous revisions are never modified.
+        <p class="field-hint note">
+          The server checks the real file type, stores a SHA-256 checksum and never changes earlier
+          revisions.
         </p>
-      </mat-dialog-content>
-      <mat-dialog-actions align="end">
-        <button mat-button type="button" mat-dialog-close>Cancel</button>
-        <button mat-flat-button type="submit" [disabled]="busy()">
+      </div>
+
+      <footer class="dlg-foot">
+        <button type="button" class="btn btn-secondary" mat-dialog-close>Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="busy()">
           {{ busy() ? 'Uploading…' : 'Upload' }}
         </button>
-      </mat-dialog-actions>
+      </footer>
     </form>
   `,
   styles: `
-    .fields {
+    .file-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      overflow: hidden;
+    }
+    .drop {
       display: flex;
       flex-direction: column;
+      align-items: center;
       gap: 4px;
-      min-width: min(560px, 80vw);
+      padding: 20px 16px;
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--r-sm);
+      background: var(--surface-subtle);
+      color: var(--text-2);
+      text-align: center;
+      cursor: pointer;
+      overflow-wrap: anywhere;
     }
-    .pair {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
+    .drop:hover,
+    .drop.over {
+      border-color: var(--brand);
+      background: var(--brand-tint);
     }
-    .file-field {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      padding: 12px;
-      border: 1px dashed var(--line-strong);
-      border-radius: var(--radius);
-      margin: 8px 0 12px;
+    .drop.has-file {
+      border-style: solid;
+      background: var(--surface);
     }
-    .file-label {
-      font-weight: 600;
+    .file-input:focus-visible + .drop {
+      box-shadow: var(--focus-ring);
     }
-    @media (max-width: 600px) {
-      .pair {
-        grid-template-columns: 1fr;
-      }
+    .drop-main {
+      color: var(--text);
+      font-weight: 500;
+    }
+    .link-like {
+      color: var(--brand);
+    }
+    .note {
+      margin: 0;
     }
   `,
 })
@@ -178,6 +248,7 @@ export class UploadDialogComponent {
   protected readonly categories = CATEGORIES;
 
   protected readonly file = signal<File | null>(null);
+  protected readonly dragging = signal(false);
   protected readonly busy = signal(false);
   protected readonly error = signal('');
 
@@ -199,6 +270,26 @@ export class UploadDialogComponent {
     versionLabel: ['', [Validators.pattern(/^[A-Za-z0-9][A-Za-z0-9. -]{0,19}$/)]],
     changeNote: ['', [Validators.maxLength(1000)]],
   });
+
+  protected invalid(name: keyof typeof this.form.controls): boolean {
+    const c = this.form.controls[name];
+    return c.invalid && (c.touched || c.dirty);
+  }
+
+  protected onDrag(event: DragEvent, over: boolean): void {
+    event.preventDefault();
+    this.dragging.set(over);
+  }
+
+  protected onDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.dragging.set(false);
+    const f = event.dataTransfer?.files?.[0];
+    if (f) {
+      this.file.set(f);
+      this.error.set('');
+    }
+  }
 
   protected onFile(event: Event): void {
     const input = event.target as HTMLInputElement;

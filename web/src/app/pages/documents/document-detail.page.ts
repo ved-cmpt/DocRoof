@@ -1,10 +1,8 @@
-import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { AuditEvent, DocumentDetail, Revision, RevisionComparison } from '../../core/api.models';
@@ -13,8 +11,17 @@ import { auditLabel, fileSize, label, tone } from '../../core/labels';
 import { SessionService } from '../../core/session.service';
 import { ToastService } from '../../core/toast.service';
 import { WalkthroughService } from '../../core/walkthrough.service';
-import { CommentsComponent } from '../../shared/activity.components';
+import { TopbarComponent } from '../../layout/topbar.component';
+import { CommentsComponent, TimelineComponent } from '../../shared/activity.components';
+import { openDialog } from '../../shared/dialog';
 import { FilePreviewComponent } from '../../shared/file-preview.component';
+import {
+  EmptyStateComponent,
+  IconComponent,
+  LongDateTimePipe,
+  ShortDatePipe,
+  StatusChipComponent,
+} from '../../shared/ui';
 import { RfiCreateDialogComponent, RfiCreateData } from '../rfis/rfi-create-dialog.component';
 import { UploadDialogComponent, UploadDialogData } from './upload-dialog.component';
 import { ExtractionPanelComponent } from './extraction-panel.component';
@@ -27,12 +34,17 @@ export const GUIDED_DOCUMENT = 'MCC-M-23 05 00';
   selector: 'app-document-detail',
   imports: [
     RouterLink,
-    DatePipe,
     FormsModule,
-    MatButtonModule,
-    MatSelectModule,
+    MatTooltipModule,
+    TopbarComponent,
+    IconComponent,
+    StatusChipComponent,
+    EmptyStateComponent,
+    ShortDatePipe,
+    LongDateTimePipe,
     FilePreviewComponent,
     CommentsComponent,
+    TimelineComponent,
     ExtractionPanelComponent,
   ],
   templateUrl: './document-detail.page.html',
@@ -73,6 +85,17 @@ export class DocumentDetailPage {
   protected readonly compareFrom = signal<string | null>(null);
   protected readonly compareTo = signal<string | null>(null);
   protected readonly comparison = signal<RevisionComparison | null>(null);
+  protected readonly tab = signal<'comments' | 'activity' | 'compare'>('comments');
+  protected readonly tabs = computed(() => {
+    const list: { key: 'comments' | 'activity' | 'compare'; label: string; count?: number }[] = [
+      { key: 'comments', label: 'Comments', count: this.comments().length },
+      { key: 'activity', label: 'Activity', count: this.events().length },
+    ];
+    if ((this.doc()?.revisions.length ?? 0) > 1) {
+      list.push({ key: 'compare', label: 'Compare revisions' });
+    }
+    return list;
+  });
 
   protected readonly selected = computed<Revision | null>(() => {
     const d = this.doc();
@@ -167,10 +190,13 @@ export class DocumentDetailPage {
       revisionId: r.id,
       page: this.viewPage(),
     };
-    this.dialog
-      .open(RfiCreateDialogComponent, { data, autoFocus: 'first-tabbable' })
+    openDialog<RfiCreateDialogComponent, RfiCreateData, RfiDetail>(
+      this.dialog,
+      RfiCreateDialogComponent,
+      data,
+    )
       .afterClosed()
-      .subscribe((rfi?: RfiDetail) => {
+      .subscribe((rfi) => {
         if (rfi) {
           this.tour.mark('create-rfi', rfi.id);
           this.toast.success(
@@ -248,10 +274,13 @@ export class DocumentDetailPage {
       documentNumber: d.documentNumber,
       suggestedLabel: `R${max.length ? Math.max(...max) + 1 : labels.length}`,
     };
-    this.dialog
-      .open(UploadDialogComponent, { data, autoFocus: 'first-tabbable' })
+    openDialog<UploadDialogComponent, UploadDialogData, Revision>(
+      this.dialog,
+      UploadDialogComponent,
+      data,
+    )
       .afterClosed()
-      .subscribe((rev?: Revision) => {
+      .subscribe((rev) => {
         if (rev) {
           this.toast.success(
             `Revision ${rev.versionLabel} uploaded. Previous revisions are unchanged.`,
@@ -262,19 +291,11 @@ export class DocumentDetailPage {
       });
   }
 
-  protected changes(e: AuditEvent): string {
-    try {
-      const parsed = JSON.parse(e.changeJson) as {
-        before?: Record<string, unknown>;
-        after?: Record<string, unknown>;
-      };
-      const after = parsed.after ?? {};
-      return Object.entries(after)
-        .filter(([k]) => !k.toLowerCase().includes('sha') && !k.toLowerCase().endsWith('id'))
-        .map(([k, v]) => `${k}: ${String(v)}`)
-        .join(' · ');
-    } catch {
-      return '';
-    }
+  protected moveTab(delta: number): void {
+    const list = this.tabs();
+    const i = list.findIndex((t) => t.key === this.tab());
+    const next = list[(i + delta + list.length) % list.length];
+    this.tab.set(next.key);
+    document.getElementById('doc-tab-' + next.key)?.focus();
   }
 }
