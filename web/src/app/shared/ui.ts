@@ -50,7 +50,7 @@ export class IconComponent {
         d="M9 2.5h10.6c.53 0 1.04.21 1.41.59l6.4 6.4c.38.37.59.88.59 1.41V27.5a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-23a2 2 0 0 1 2-2Z"
         fill="var(--brand)"
       />
-      <path d="M20 2.6v5.9a2 2 0 0 0 2 2h5.9Z" fill="#9fcfc3" />
+      <path d="M20 2.6v5.9a2 2 0 0 0 2 2h5.9Z" fill="#edbfa8" />
       <path
         d="m11.5 20 5-5 5 5"
         fill="none"

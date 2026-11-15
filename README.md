@@ -25,11 +25,11 @@ templates and smoke scripts are ready ([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md),
 | Backend unit tests (xUnit) | 121 passed |
 | Backend integration tests (WebApplicationFactory + Testcontainers SQL Server 2022) | 57 passed |
 | Angular unit tests (Vitest) | 37 passed |
-| Playwright end-to-end (Chromium) | 13 passed |
+| Playwright end-to-end (Chromium, incl. axe WCAG 2.1 AA) | 14 passed |
 | Lint / format (ESLint, Prettier, `dotnet format`) | clean |
 | Dependency audits (`dotnet list package --vulnerable`, `npm audit --omit=dev`) | 0 known vulnerabilities |
 | Production Docker image + `scripts/smoke.ps1` / `smoke.sh` | passed locally |
-| Lighthouse, landing page, production image | mobile 84 / 100 / 100 / 100 · desktop 99 / 100 / 100 / 100 (perf / a11y / best practices / SEO) |
+| Lighthouse, landing page, production image (measured before the terracotta theme) | mobile 84 / 100 / 100 / 100 · desktop 99 / 100 / 100 / 100 (perf / a11y / best practices / SEO) |
 
 ## Quick start (Windows PowerShell)
 
@@ -88,10 +88,11 @@ docker compose --profile app up -d --build        # SQL Server + production imag
 
 ## Design
 
-Warm paper neutrals with one teal-green brand colour for primary actions, selection and links; status colours only as
-soft tints. Plus Jakarta Sans for headings, Inter for the UI, JetBrains Mono for document numbers. The workspace uses a
-collapsible sidebar, slim top bar, grid-style tables with compact filter chips and record pages with a properties panel.
-All tokens live in `web/src/styles.scss`; the reasoning is in [ADR-024](docs/DECISIONS.md).
+Warm paper and sand neutrals with one terracotta brand colour for primary actions, selection and links; status colours
+only as soft tints. Plus Jakarta Sans for headings, Inter for the UI, JetBrains Mono for document numbers. The workspace
+uses a collapsible sidebar, slim top bar, grid-style tables with compact filter chips and record pages with a properties
+panel. All tokens live in `web/src/styles.scss`; the reasoning is in [ADR-024](docs/DECISIONS.md) and
+[ADR-025](docs/DECISIONS.md) (terracotta theme).
 
 ## What is inside
 

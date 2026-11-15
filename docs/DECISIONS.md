@@ -141,3 +141,23 @@ generic and noisy. The redesign follows app-grid clarity for the workspace and a
   colour only for overdue; every chart has a data-table toggle.
 - **Review loop.** `web/e2e/review.spec.ts` (Playwright project `review`) captures every screen at 1440 and 390 px into
   `.local/review/` for visual review; it is not part of CI.
+
+## ADR-025 — Terracotta colour theme
+The owner replaced the teal-green brand with a warm terracotta theme. Only colour changed; layout, components, fonts
+and behaviour are as in ADR-024, and every colour is still a token in `web/src/styles.scss`.
+
+- **Palette.** Brand `#A84A28` (hover `#8E3D20`, tint `#F8E9E1`) on paper `#FBF6EF`, surfaces `#FFFFFF` / `#F4ECE2`,
+  border `#EADFD2`, text `#2B1F1A` / `#6B5A50`, muted `#9A8A80` (icons and decoration only). Every neutral, shadow,
+  scrim and the Material theme (`$orange-palette` plus overrides) is warm-tinted; no cool greys remain.
+- **Status.** Success, warning, info and neutral keep soft tints with darker text. Danger is crimson `#A61E3A` on
+  `#FBE8EC` (error toast `#6E1427`) so it never reads as the terracotta brand.
+- **Charts.** Terracotta, sand `#D9C3AE` and brown `#6E4B3A`: opened/closed bars are terracotta/sand, the open-items
+  line is brown, document statuses are terracotta, brown, sand and light sand with a 1 px separator between stacked
+  segments. Overdue keeps the danger colour. Each chart still has a data-table toggle, which is the text alternative
+  for the light sand fills (under 3:1 against white, as the grey fills were before).
+- **Deviations from the requested values, for WCAG AA.** Success text `#2E7D4F` measured 4.44:1 on `#E8F3EC`, so it is
+  `#2B7A4C` (4.63:1). Placeholders got their own token `#76665C` (≥ 4.69:1 on every surface) because muted `#9A8A80`
+  is about 3:1. Terracotta is only 2.79:1 against body text, so links inside paragraphs and list items are underlined
+  (axe `link-in-text-block`, WCAG 1.4.1); this also failed under the teal theme but no test covered the case study.
+- **Assets.** Logo mark, favicon SVG/PNG, touch icon, social image, README screenshots and product-tour crops were
+  regenerated from the running app; the landing preview and case-study diagrams follow the tokens.

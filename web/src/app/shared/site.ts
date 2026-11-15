@@ -10,5 +10,5 @@ export const MEASURED_TESTS = {
   unit: 121,
   integration: 57,
   angular: 37,
-  e2e: 13,
+  e2e: 14,
 };

@@ -2,50 +2,55 @@
 
 /* ==========================================================================
    DocRoof design system
-   Warm paper neutrals, one brand colour (deep teal-green) for primary actions, selection and links, and status
+   Warm paper and sand neutrals, one brand colour (terracotta) for primary actions, selection and links, and status
    colours used only to mean status — always as a soft tint with darker text. Every value lives here as a token;
    components reference tokens, never raw colours.
    ========================================================================== */
 :root {
-  /* Surfaces */
-  --bg: #fafaf7;
+  /* Surfaces: warm paper and sand; no cool greys */
+  --bg: #fbf6ef;
   --surface: #ffffff;
-  --surface-subtle: #f3f2ee;
-  --border: #e6e4de;
-  --border-strong: #d4d1c8;
+  --surface-subtle: #f4ece2;
+  --border: #eadfd2;
+  --border-strong: #d9cbbb;
+  --border-hover: #cdbba9;
 
   /* Text */
-  --text: #14201c;
-  --text-2: #5b6662;
-  --text-3: #8a938f; /* icons, placeholders and decoration only: below AA for body text */
+  --text: #2b1f1a;
+  --text-2: #6b5a50;
+  --text-3: #9a8a80; /* icons and decoration only: below AA for body text */
+  --text-placeholder: #76665c; /* AA on every surface */
 
   /* Brand */
-  --brand: #0f6e5c;
-  --brand-hover: #0b5a4b;
-  --brand-tint: #e6f2ef;
+  --brand: #a84a28;
+  --brand-hover: #8e3d20;
+  --brand-tint: #f8e9e1;
   --on-brand: #ffffff;
 
-  /* Status: text on tint */
-  --success: #1e7a4c;
-  --success-tint: #e7f4ec;
-  --warning: #9a6200;
-  --warning-tint: #fbf1dc;
-  --danger: #b4372f;
-  --danger-tint: #fbe9e7;
+  /* Status: text on tint. Danger is crimson so it never reads as the terracotta brand. */
+  --success: #2b7a4c;
+  --success-tint: #e8f3ec;
+  --warning: #8a5a00;
+  --warning-tint: #fbf0d9;
+  --danger: #a61e3a;
+  --danger-tint: #fbe8ec;
   --info: #2f5f9e;
-  --info-tint: #e8eff8;
-  --neutral: #5b6662;
-  --neutral-tint: #efeeea;
+  --info-tint: #e9eff8;
+  --neutral: #6b5a50;
+  --neutral-tint: #f1eae2;
+  --toast-danger: #6e1427;
 
   /* Interaction */
-  --hover: rgb(20 32 28 / 4%);
-  --pressed: rgb(20 32 28 / 7%);
+  --hover: rgb(43 31 26 / 4%);
+  --pressed: rgb(43 31 26 / 7%);
   --focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--brand);
-  --scrim: rgb(20 32 28 / 32%);
+  --scrim: rgb(43 31 26 / 32%);
 
-  /* Charts: brand + neutral greys */
-  --chart-grey: #c3c8c4;
-  --chart-grey-light: #e2e0d9;
+  /* Charts: terracotta brand, sand and brown */
+  --chart-sand: #d9c3ae;
+  --chart-sand-light: #ece0d3;
+  --chart-brown: #6e4b3a;
+  --chart-terracotta-light: #d99a80;
 
   /* Type */
   --font-display: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
@@ -65,8 +70,8 @@
   --r-sm: 6px; /* inputs, buttons, chips */
   --r-md: 10px; /* cards, dialogs, menus */
   --r-full: 999px; /* avatars only */
-  --shadow-card: 0 1px 2px rgb(20 32 28 / 4%), 0 1px 3px rgb(20 32 28 / 5%);
-  --shadow-pop: 0 2px 6px rgb(20 32 28 / 6%), 0 14px 36px rgb(20 32 28 / 14%);
+  --shadow-card: 0 1px 2px rgb(43 31 26 / 4%), 0 1px 3px rgb(43 31 26 / 5%);
+  --shadow-pop: 0 2px 6px rgb(43 31 26 / 6%), 0 14px 36px rgb(43 31 26 / 14%);
 
   /* Layout */
   --page-pad: 24px;
@@ -82,7 +87,7 @@ html {
   @include mat.theme(
     (
       color: (
-        primary: mat.$cyan-palette,
+        primary: mat.$orange-palette,
         theme-type: light,
       ),
       typography: (
@@ -94,19 +99,19 @@ html {
   );
   @include mat.theme-overrides(
     (
-      primary: #0f6e5c,
+      primary: #a84a28,
       on-primary: #ffffff,
-      primary-container: #e6f2ef,
-      on-primary-container: #0b5a4b,
+      primary-container: #f8e9e1,
+      on-primary-container: #8e3d20,
       surface: #ffffff,
-      on-surface: #14201c,
-      on-surface-variant: #5b6662,
+      on-surface: #2b1f1a,
+      on-surface-variant: #6b5a50,
       surface-container: #ffffff,
       surface-container-low: #ffffff,
       surface-container-high: #ffffff,
-      surface-container-highest: #f3f2ee,
-      outline: #d4d1c8,
-      outline-variant: #e6e4de,
+      surface-container-highest: #f4ece2,
+      outline: #d9cbbb,
+      outline-variant: #eadfd2,
     )
   );
   @include mat.dialog-overrides(
@@ -125,17 +130,17 @@ html {
   );
   @include mat.tooltip-overrides(
     (
-      container-color: #14201c,
+      container-color: #2b1f1a,
       container-shape: 6px,
       supporting-text-size: 12px,
     )
   );
   @include mat.snack-bar-overrides(
     (
-      container-color: #14201c,
+      container-color: #2b1f1a,
       container-shape: 10px,
       supporting-text-color: #ffffff,
-      button-color: #9fd9c9,
+      button-color: #f2b79e,
     )
   );
 }
@@ -202,6 +207,13 @@ a {
     text-decoration: underline;
     text-underline-offset: 3px;
   }
+}
+
+/* Links inside running text are underlined: terracotta alone is under 3:1 against body text (WCAG 1.4.1). */
+:is(p, li) > a:not([class]) {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 
 button,
@@ -692,11 +704,11 @@ code,
     box-shadow 0.12s ease;
 
   &::placeholder {
-    color: var(--text-3);
+    color: var(--text-placeholder);
   }
 
   &:hover:not(:disabled) {
-    border-color: #bfbbb0;
+    border-color: var(--border-hover);
   }
 
   &:focus,
@@ -1106,7 +1118,7 @@ kbd {
   display: block;
   height: 12px;
   border-radius: 4px;
-  background: linear-gradient(90deg, var(--surface-subtle), #fbfaf8, var(--surface-subtle));
+  background: linear-gradient(90deg, var(--surface-subtle), var(--bg), var(--surface-subtle));
   background-size: 200% 100%;
   animation: shimmer 1.4s ease-in-out infinite;
 }
@@ -1328,7 +1340,7 @@ kbd {
 }
 
 .toast-error .mat-mdc-snackbar-surface {
-  background: #5c1f1a !important;
+  background: var(--toast-danger) !important;
 }
 
 /* Page-action labels collapse to icons on phones (the button keeps its aria-label). */
