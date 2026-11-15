@@ -12,8 +12,14 @@
       <div class="status-box" role="note">
         <strong>Project status: all three planned phases are built and tested locally.</strong>
         The hosted deployment is <strong>not live yet</strong>: it needs the owner's cloud accounts
-        (steps are in <code>docs/OWNER_TODO.md</code>). Every number on this page was measured in
-        the run recorded in <code>docs/STATUS.md</code>.
+        (steps are in
+        <a [href]="githubUrl + '/blob/main/docs/OWNER_TODO.md'" rel="noopener" target="_blank"
+          ><code>docs/OWNER_TODO.md</code></a
+        >). Every number on this page was measured in the run recorded in
+        <a [href]="githubUrl + '/blob/main/docs/STATUS.md'" rel="noopener" target="_blank"
+          ><code>docs/STATUS.md</code></a
+        >. Source and CI:
+        <a [href]="githubUrl" rel="noopener" target="_blank">github.com/ved-cmpt/DocRoof</a>.
       </div>
       <nav class="toc" aria-label="On this page">
         <a routerLink="/case-study" fragment="problem">Problem</a>

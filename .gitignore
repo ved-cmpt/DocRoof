@@ -8,7 +8,7 @@ obj/
 
 # Local data and secrets
 .env
-data/
+/data/
 *.log
 
 # Frontend (see also web/.gitignore)
