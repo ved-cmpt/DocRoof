@@ -182,8 +182,8 @@ export class PublicHeaderComponent {
           <a [href]="githubUrl" rel="noopener" target="_blank">Source on GitHub</a>
         </nav>
         <p class="stack">
-          Angular · ASP.NET Core (.NET 10) · SQL Server 2022 · MIT licence · sample PDFs generated with
-          PdfPig
+          Angular · ASP.NET Core (.NET 10) · SQL Server 2022 · MIT licence · sample PDFs generated
+          with PdfPig
         </p>
       </div>
     </footer>

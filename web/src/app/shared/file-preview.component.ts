@@ -177,7 +177,9 @@ interface PdfLoadingTask {
       max-width: 100%;
       height: auto;
       background: #fff;
-      box-shadow: var(--shadow-card), 0 0 0 1px var(--border);
+      box-shadow:
+        var(--shadow-card),
+        0 0 0 1px var(--border);
     }
     .text-preview {
       white-space: pre-wrap;

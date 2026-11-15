@@ -51,7 +51,13 @@ const isoDay = (offsetDays: number) =>
         </div>
         <div class="field">
           <label class="field-label" for="assign-due">Due date</label>
-          <input id="assign-due" class="input" type="date" formControlName="dueDate" [min]="minDue" />
+          <input
+            id="assign-due"
+            class="input"
+            type="date"
+            formControlName="dueDate"
+            [min]="minDue"
+          />
           @if (form.controls.dueDate.invalid && form.controls.dueDate.touched) {
             <p class="field-error">Choose a date from tomorrow on.</p>
           } @else {
@@ -133,7 +139,12 @@ export interface ReasonDialogData {
       </div>
       <footer class="dlg-foot">
         <button type="button" class="btn btn-secondary" mat-dialog-close>Cancel</button>
-        <button type="submit" class="btn" [class.btn-danger]="data.danger" [class.btn-primary]="!data.danger">
+        <button
+          type="submit"
+          class="btn"
+          [class.btn-danger]="data.danger"
+          [class.btn-primary]="!data.danger"
+        >
           {{ data.confirm }}
         </button>
       </footer>

@@ -45,18 +45,29 @@ export function describeEvent(e: AuditEvent): EventText {
     case 'project.created':
       return { verb: 'created the project', object: str(after['code']), icon: 'building' };
     case 'document.created':
-      return { verb: 'created', object: str(after['documentNumber']) ?? e.reference ?? undefined, icon: 'file-text' };
+      return {
+        verb: 'created',
+        object: str(after['documentNumber']) ?? e.reference ?? undefined,
+        icon: 'file-text',
+      };
     case 'document.metadata-updated': {
       const field = Object.keys(after).find((k) => k !== 'source' && k !== 'Source');
       return {
         verb: 'updated',
-        object: field ? label(field.charAt(0).toUpperCase() + field.slice(1)).toLowerCase() : 'metadata',
+        object: field
+          ? label(field.charAt(0).toUpperCase() + field.slice(1)).toLowerCase()
+          : 'metadata',
         meta: field ? `now “${str(after[field]) ?? '—'}”` : undefined,
         icon: 'square-pen',
       };
     }
     case 'revision.uploaded':
-      return { verb: 'uploaded', object: str(after['versionLabel']), meta: str(after['fileName']), icon: 'upload' };
+      return {
+        verb: 'uploaded',
+        object: str(after['versionLabel']),
+        meta: str(after['fileName']),
+        icon: 'upload',
+      };
     case 'revision.superseded':
       return {
         verb: 'uploaded',
@@ -75,13 +86,21 @@ export function describeEvent(e: AuditEvent): EventText {
       return {
         verb: 'created',
         object: str(after['referenceNumber']) ?? e.reference ?? undefined,
-        meta: join(str(after['revision']), str(after['sourcePage']) ? `page ${str(after['sourcePage'])}` : undefined),
+        meta: join(
+          str(after['revision']),
+          str(after['sourcePage']) ? `page ${str(after['sourcePage'])}` : undefined,
+        ),
         icon: 'message-square-text',
       };
     case 'rfi.submitted':
       return { verb: 'submitted the RFI', icon: 'send' };
     case 'rfi.assigned':
-      return { verb: 'assigned', object: str(after['assignee']), meta: due(after['dueAt']), icon: 'user-check' };
+      return {
+        verb: 'assigned',
+        object: str(after['assignee']),
+        meta: due(after['dueAt']),
+        icon: 'user-check',
+      };
     case 'rfi.answered':
       return { verb: 'posted an answer', icon: 'message-square' };
     case 'rfi.answer-approved':
@@ -119,7 +138,11 @@ export function describeEvent(e: AuditEvent): EventText {
     case 'submittal.finalized':
       return { verb: 'finalized the submittal', icon: 'file-check' };
     case 'submittal.reassigned':
-      return { verb: 'reassigned the review to', object: str(after['reviewer']), icon: 'user-check' };
+      return {
+        verb: 'reassigned the review to',
+        object: str(after['reviewer']),
+        icon: 'user-check',
+      };
     case 'extraction.run':
     case 'extraction.llm-run':
       return {
@@ -131,7 +154,10 @@ export function describeEvent(e: AuditEvent): EventText {
       return {
         verb: 'accepted',
         object: `${label(str(after['field'])).toLowerCase() || 'a'} suggestion`,
-        meta: join(str(after['proposedValue']), str(after['page']) ? `page ${str(after['page'])}` : undefined),
+        meta: join(
+          str(after['proposedValue']),
+          str(after['page']) ? `page ${str(after['page'])}` : undefined,
+        ),
         icon: 'circle-check',
       };
     case 'extraction.rejected':

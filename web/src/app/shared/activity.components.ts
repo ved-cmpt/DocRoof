@@ -121,7 +121,14 @@ export class TimelineComponent {
 
 @Component({
   selector: 'app-comments',
-  imports: [FormsModule, RouterLink, AvatarComponent, IconComponent, RelativeTimePipe, LongDateTimePipe],
+  imports: [
+    FormsModule,
+    RouterLink,
+    AvatarComponent,
+    IconComponent,
+    RelativeTimePipe,
+    LongDateTimePipe,
+  ],
   template: `
     @if (comments().length === 0) {
       <p class="none">No comments yet. Start the conversation below.</p>
