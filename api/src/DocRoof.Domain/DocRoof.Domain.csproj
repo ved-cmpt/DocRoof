@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>DocRoof.Domain</RootNamespace>
+  </PropertyGroup>
+</Project>

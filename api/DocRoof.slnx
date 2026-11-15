@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DocRoof.Api/DocRoof.Api.csproj" />
+    <Project Path="src/DocRoof.Domain/DocRoof.Domain.csproj" />
+    <Project Path="src/DocRoof.Infrastructure/DocRoof.Infrastructure.csproj" />
+  </Folder>
+  <Project Path="../tests/DocRoof.IntegrationTests/DocRoof.IntegrationTests.csproj" />
+  <Project Path="../tests/DocRoof.UnitTests/DocRoof.UnitTests.csproj" />
+</Solution>
