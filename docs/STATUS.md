@@ -14,6 +14,7 @@ and Azure accounts; see [OWNER_TODO.md](OWNER_TODO.md)).
 - [x] Published on GitHub — public repository https://github.com/ved-cmpt/DocRoof, CI green on `main`, branch
   protection on `main`, release [v1.0.0](https://github.com/ved-cmpt/DocRoof/releases/tag/v1.0.0).
 - [x] **UI redesign** (branch `redesign`) — new brand, sidebar app shell and consistent screens; see below.
+- [x] **Terracotta theme** (branch `theme-terracotta`) — colour-only retheme; see below.
 
 ## Toolchain (inspected 2026-11-15)
 
@@ -119,6 +120,32 @@ Problems found by the tests during the redesign: axe flagged text in `--text-3` 
 superseded revision tags and contrast measured mid-animation on the hero and dialogs → tags use the secondary text
 colour, the hero no longer fades in, and the dialog axe check waits for the open animation. The keyboard test flaked
 once (Enter pressed before the landing page settled) → it now waits for network idle and asserts focus first.
+
+## Terracotta theme (2026-11-15, branch `theme-terracotta`)
+
+Colour-only change (ADR-025): terracotta brand, warm paper and sand neutrals, crimson danger, terracotta/sand/brown
+chart series, new logo colours, favicon PNGs, touch icon, social image and product screenshots. Layout, components,
+fonts and behaviour are unchanged.
+
+| Command | Result |
+| --- | --- |
+| Token contrast script (WCAG formula over every text/background token pair) | all pairs ≥ 4.5:1 except the requested success `#2E7D4F` on `#E8F3EC` (4.44) → `#2B7A4C` (4.63); placeholder token `#76665C` added (4.69–5.49) |
+| `npx playwright test --project=review`, temporarily patched to run axe `color-contrast` + `link-in-text-block` on every capture (patch not committed) | 43 captures at 1440 and 390 px: 0 violations except the case study (`link-in-text-block`, 2.79:1) → inline text links underlined → 43 of 43 with 0 violations; 4 passed, no horizontal overflow |
+| `npx playwright test --project=screenshots` | first run failed: the local demo was at its 200-workspace cap from earlier runs (503) → expired the local guest tenants with `sqlcmd` → 3 passed; regenerated 5 README screenshots, 4 tour crops, `og-image.png`, `favicon-32.png`, `apple-touch-icon.png` |
+| `dotnet format api/DocRoof.slnx --verify-no-changes` | exit 0 |
+| `dotnet build api/DocRoof.slnx` | 0 warnings, 0 errors |
+| `dotnet test api/DocRoof.slnx` | Unit **121 passed**, integration **57 passed** (Testcontainers SQL Server 2022) |
+| `npm run lint` · `npm run format:check` | all files pass · Prettier clean |
+| `npm test -- --watch=false` | 10 files, **37 tests passed** |
+| `npm run build` | bundle generated, no budget warnings (initial 465 kB raw / 114 kB transfer) |
+| `npx playwright test --project=chromium` | first run 13 passed, 1 failed: axe on RFI detail caught the welcome toast mid-entry (`aria-hidden-focus` + `color-contrast`; 3 of 10 with `--repeat-each=10`) → the app axe tests wait until the toast is announced and settled; `-g "no detectable violations" --repeat-each=8`: 48 passed; full suite `--repeat-each=2`: **28 passed** (14 tests, incl. the new case-study axe test) |
+| `npm audit --omit=dev` · `dotnet list … --vulnerable --include-transitive` | 0 vulnerabilities · no vulnerable packages (5 projects) |
+
+Not re-run locally for this change: the production Docker image smoke test (CI builds and smoke-tests the image) and
+Lighthouse; the Lighthouse numbers in this file and the README predate the theme.
+
+The new case-study axe test also fails on the old teal theme (checked by stashing the theme), so that was missing
+coverage, not a regression.
 
 ## GitHub publication (2026-11-15)
 
