@@ -1,0 +1,244 @@
+<div class="page">
+  <nav class="crumbs small" aria-label="Breadcrumb">
+    <a routerLink="/app/rfis">RFIs</a> <span aria-hidden="true">/</span>
+    <span aria-current="page">{{ rfi()?.referenceNumber ?? 'RFI' }}</span>
+  </nav>
+
+  @if (loading() && !rfi()) {
+    <div class="panel panel-pad stack" role="status" aria-label="Loading RFI">
+      <span class="skeleton" style="width: 40%"></span><span class="skeleton"></span>
+    </div>
+  } @else if (notFound()) {
+    <section class="panel state-box">
+      <h1>RFI not found</h1>
+      <p>
+        It does not exist, is someone else's draft, or belongs to a project you are not a member of.
+      </p>
+      <a mat-flat-button routerLink="/app/rfis">Back to RFIs</a>
+    </section>
+  } @else if (error()) {
+    <div class="error-box" role="alert">{{ error() }}</div>
+  } @else if (rfi(); as r) {
+    <div class="page-header">
+      <div>
+        <p class="eyebrow">{{ r.projectCode }} · {{ label(r.discipline) }}</p>
+        <h1>
+          <span class="mono ref">{{ r.referenceNumber }}</span> {{ r.subject }}
+        </h1>
+      </div>
+      <span [class]="'chip big ' + tone(r.state)" data-testid="rfi-state">{{
+        label(r.state)
+      }}</span>
+    </div>
+
+    <div class="layout">
+      <div class="stack">
+        <section class="panel panel-pad" aria-labelledby="q-title">
+          <h2 id="q-title">Question</h2>
+          <p class="question">{{ r.question }}</p>
+          <div class="citation" role="group" aria-label="Cited document">
+            <div>
+              <span class="eyebrow">Cites</span>
+              <a
+                [routerLink]="['/app/documents', r.citation.documentId]"
+                [queryParams]="{ rev: r.citation.revisionId, page: r.citation.page }"
+              >
+                <span class="mono">{{ r.citation.documentNumber }}</span>
+                {{ r.citation.documentTitle }} · <strong>{{ r.citation.versionLabel }}</strong>,
+                page {{ r.citation.page }}
+              </a>
+            </div>
+            @if (r.citation.newerRevisionExists) {
+              <p class="notice small" role="note">
+                A newer revision ({{ r.citation.currentVersionLabel }}) exists. This RFI stays
+                pinned to {{ r.citation.versionLabel }} so the question keeps its original context.
+              </p>
+            }
+          </div>
+          @if (r.reopenReason && r.state !== 'Closed') {
+            <p class="notice small">Reopened: {{ r.reopenReason }}</p>
+          }
+        </section>
+
+        <section class="panel panel-pad" aria-labelledby="answers-title">
+          <h2 id="answers-title">Answers</h2>
+          @if (r.responses.length === 0) {
+            <p class="muted">No answer yet.</p>
+          }
+          @for (a of r.responses; track a.id) {
+            <article
+              class="answer"
+              [class.approved]="a.status === 'Approved'"
+              [class.rejected]="a.status === 'Rejected'"
+            >
+              <div class="row small">
+                <strong>{{ a.author.displayName }}</strong>
+                <span class="muted">{{ a.createdAt | date: 'MMM d, y, HH:mm' }}</span>
+                <span [class]="'chip ' + tone(a.status)">{{ a.status }}</span>
+              </div>
+              <p>{{ a.answer }}</p>
+              @if (a.approvedBy) {
+                <p class="small muted">
+                  Approved by {{ a.approvedBy.displayName }} on {{ a.approvedAt | date: 'medium' }}
+                </p>
+              }
+              @if (a.rejectedBy) {
+                <p class="small muted">
+                  Returned by {{ a.rejectedBy.displayName }}: {{ a.rejectionReason }}
+                </p>
+              }
+            </article>
+          }
+        </section>
+
+        <section class="panel panel-pad" aria-labelledby="comments-title">
+          <h2 id="comments-title">Comments</h2>
+          <app-comments
+            resource="rfis"
+            [resourceId]="r.id"
+            [comments]="r.comments"
+            [revisionId]="r.citation.revisionId"
+            [maxPage]="r.citation.pageCount"
+            [documentId]="r.citation.documentId"
+            (added)="onComment($event)"
+          />
+        </section>
+      </div>
+
+      <div class="stack">
+        <section class="panel panel-pad actions" aria-labelledby="actions-title">
+          <h2 id="actions-title">Actions</h2>
+          <dl class="facts small">
+            <div>
+              <dt>Raised by</dt>
+              <dd>{{ r.createdBy.displayName }}</dd>
+            </div>
+            <div>
+              <dt>Assignee</dt>
+              <dd>{{ r.assignee?.displayName ?? 'Unassigned' }}</dd>
+            </div>
+            <div>
+              <dt>Due</dt>
+              <dd>
+                {{ r.dueAt ? (r.dueAt | date: 'mediumDate') : '—' }}
+                @if (r.isOverdue) {
+                  <span class="overdue-badge">Overdue</span>
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>Your role</dt>
+              <dd>{{ label(r.myRole) }}</dd>
+            </div>
+          </dl>
+
+          @if (r.availableActions.length === 0) {
+            <p class="muted small" data-testid="no-actions">
+              No actions are available to you in this state. In the guest demo, switch persona from
+              the top bar.
+            </p>
+          }
+
+          @if (can('Submit')) {
+            <button mat-flat-button (click)="run('Submit')" [disabled]="!!busy()">
+              Submit RFI
+            </button>
+          }
+
+          @if (can('Assign')) {
+            <div class="action-form">
+              <h3>Assign reviewer</h3>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Reviewer</mat-label>
+                <mat-select [(ngModel)]="assigneeId" name="assignee">
+                  @for (m of reviewers(); track m.userId) {
+                    <mat-option [value]="m.userId"
+                      >{{ m.displayName }} · {{ m.jobTitle }}</mat-option
+                    >
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Due date</mat-label>
+                <input matInput type="date" [(ngModel)]="dueDate" name="due" [min]="minDue" />
+              </mat-form-field>
+              <button mat-flat-button (click)="run('Assign')" [disabled]="!!busy()">
+                {{ r.state === 'Assigned' ? 'Reassign' : 'Assign' }}
+              </button>
+            </div>
+          }
+
+          @if (can('Answer')) {
+            <div class="action-form">
+              <h3>Answer</h3>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Your answer</mat-label>
+                <textarea
+                  matInput
+                  rows="4"
+                  [(ngModel)]="answer"
+                  name="answer"
+                  maxlength="4000"
+                ></textarea>
+              </mat-form-field>
+              <button mat-flat-button (click)="run('Answer')" [disabled]="!!busy()">
+                Post answer
+              </button>
+            </div>
+          }
+
+          @if (can('ApproveAnswer') || can('RejectAnswer')) {
+            <div class="action-form">
+              <h3>Review the answer</h3>
+              @if (pending(); as p) {
+                <p class="small quote">“{{ p.answer }}”</p>
+              }
+              @if (can('ApproveAnswer')) {
+                <button mat-flat-button (click)="run('ApproveAnswer')" [disabled]="!!busy()">
+                  Approve answer
+                </button>
+              }
+              @if (can('RejectAnswer')) {
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Reason for returning</mat-label>
+                  <input matInput [(ngModel)]="reason" name="reason" maxlength="1000" />
+                </mat-form-field>
+                <button mat-stroked-button (click)="run('RejectAnswer')" [disabled]="!!busy()">
+                  Return to reviewer
+                </button>
+              }
+            </div>
+          }
+
+          @if (can('Close')) {
+            <button mat-flat-button class="btn-amber" (click)="run('Close')" [disabled]="!!busy()">
+              Close RFI
+            </button>
+          }
+
+          @if (can('Reopen')) {
+            <div class="action-form">
+              <h3>Reopen</h3>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Reason</mat-label>
+                <input matInput [(ngModel)]="reason" name="reopen" maxlength="1000" />
+              </mat-form-field>
+              <button mat-stroked-button (click)="run('Reopen')" [disabled]="!!busy()">
+                Reopen RFI
+              </button>
+            </div>
+          }
+
+          @if (actionError()) {
+            <div class="error-box small" role="alert">{{ actionError() }}</div>
+          }
+        </section>
+
+        <section class="panel" aria-labelledby="tl-title">
+          <div class="panel-header"><h2 id="tl-title">Timeline</h2></div>
+          <app-timeline [events]="r.timeline" label="RFI timeline" />
+        </section>
+      </div>
+    </div>
+  }
+</div>

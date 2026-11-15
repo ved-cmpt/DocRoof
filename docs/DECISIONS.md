@@ -55,3 +55,31 @@ JavaScript is never executed; PDFs flagged with active content are download-only
 Services use explicit transactions; SQL Server's retrying execution strategy would require wrapping each in a
 replayable delegate (and local-disk file writes are not replayable). Azure SQL serverless cold starts are handled
 with a longer connection timeout in the deployment connection string instead (see docs/DEPLOYMENT.md, Phase 3).
+
+## ADR-011 — The guided task includes an explicit "assign" step
+The spec's walkthrough goes "create RFI → switch to Reviewer and answer". The RFI state machine (also in the spec)
+only lets a Project Manager or Document Controller move Submitted → Assigned, so the guided task adds "switch to the
+Project Manager and assign". The state machine wins; the walkthrough follows it.
+
+## ADR-012 — Rowversion is required on every workflow transition
+Transition endpoints require the `rowVersion` the client last saw. The service compares it before doing any work
+(clear 409 message) and also sets it as the EF original value, so a race between two requests that both passed the
+early check is still caught by SQL Server (DbUpdateConcurrencyException → 409). Deadlock victims (error 1205) also
+map to 409 "try again".
+
+## ADR-013 — Draft RFIs are private to their author
+A Draft is a personal note until submitted; other members get 404 for it and it is excluded from lists, the review
+queue and insights.
+
+## ADR-014 — Reference numbers are allocated under an update lock
+`RFI-###` / `SUB-###` numbers are computed inside the creating transaction with `UPDLOCK, HOLDLOCK` on the project's
+rows; the unique index `(ProjectId, ReferenceNumber)` remains the final guard.
+
+## ADR-015 — Reminder idempotency in the database
+`Notifications.DedupeKey` (`overdue:{resource}:{item}:{recipient}:{yyyyMMdd}`) has a filtered unique index. The job
+skips keys that already exist and treats a unique-violation on insert as success, so retries and concurrent runs can
+never create duplicates.
+
+## ADR-016 — Development-only demo quota
+`appsettings.Development.json` raises the per-IP guest-workspace quota (500/hour) so local and CI end-to-end runs
+are not blocked; the production default remains 5 per hour per address.

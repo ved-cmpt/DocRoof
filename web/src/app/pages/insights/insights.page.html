@@ -1,0 +1,224 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">{{ session.project()?.code }} · Live project metrics</p>
+      <h1>Insights</h1>
+      <p>
+        Computed from the database on every load
+        @if (view(); as v) {
+          (generated {{ v.raw.generatedAt | date: 'medium' }})
+        }
+        — nothing on this page is hard-coded.
+      </p>
+    </div>
+    <button mat-stroked-button (click)="load(session.project()?.id ?? null)">Refresh</button>
+  </div>
+
+  @if (error()) {
+    <div class="error-box" role="alert">{{ error() }}</div>
+  } @else if (loading() && !view()) {
+    <div class="panel panel-pad stack" role="status" aria-label="Loading insights">
+      <span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span>
+    </div>
+  } @else if (view(); as v) {
+    <section class="kpis" aria-label="Key figures">
+      @for (k of v.kpis; track k.label) {
+        <div class="kpi panel">
+          <span class="kpi-label">{{ k.label }}</span>
+          <span class="kpi-value">{{ k.value }}</span>
+          <span class="kpi-note small muted">{{ k.note }}</span>
+        </div>
+      }
+    </section>
+
+    <div class="charts">
+      <figure class="panel chart wide">
+        <figcaption>
+          <h2>RFIs opened vs closed per week</h2>
+          <span class="legend small">
+            <span class="sw" style="background: #1b2a3d"></span> Opened
+            <span class="sw" style="background: #f5a524; outline: 1px solid #8a4b00"></span> Closed
+            <span class="sw line"></span> Open at week end
+          </span>
+        </figcaption>
+        <svg viewBox="0 0 660 220" role="img" aria-labelledby="wk-desc" class="svg">
+          <desc id="wk-desc">
+            Grouped bars for RFIs opened and closed in each of the last {{ v.weeks.length }} weeks,
+            with a line for RFIs still open at the end of each week. The data table below lists the
+            same values.
+          </desc>
+          <line x1="40" y1="180" x2="640" y2="180" stroke="#b4bec9" />
+          <text x="34" y="184" text-anchor="end" font-size="10" fill="#536274">0</text>
+          <text x="34" y="34" text-anchor="end" font-size="10" fill="#536274">{{ v.weekMax }}</text>
+          <line x1="40" y1="30" x2="640" y2="30" stroke="#e7e9e6" stroke-dasharray="3 3" />
+          @for (w of v.weeks; track w.label; let i = $index) {
+            <rect
+              [attr.x]="40 + i * step(v) + step(v) * 0.15"
+              [attr.y]="180 - barHeight(w.opened, v.weekMax)"
+              [attr.width]="step(v) * 0.32"
+              [attr.height]="barHeight(w.opened, v.weekMax)"
+              fill="#1b2a3d"
+            />
+            <rect
+              [attr.x]="40 + i * step(v) + step(v) * 0.5"
+              [attr.y]="180 - barHeight(w.closed, v.weekMax)"
+              [attr.width]="step(v) * 0.32"
+              [attr.height]="barHeight(w.closed, v.weekMax)"
+              fill="#f5a524"
+              stroke="#8a4b00"
+              stroke-width="0.5"
+            />
+            @if (i % 2 === 0) {
+              <text
+                [attr.x]="40 + i * step(v) + step(v) / 2"
+                y="198"
+                text-anchor="middle"
+                font-size="10"
+                fill="#536274"
+              >
+                {{ w.label }}
+              </text>
+            }
+          }
+          <polyline [attr.points]="linePoints(v)" fill="none" stroke="#1f5fbf" stroke-width="2.5" />
+          @for (w of v.weeks; track w.label; let i = $index) {
+            <circle
+              [attr.cx]="40 + i * step(v) + step(v) / 2"
+              [attr.cy]="180 - barHeight(w.openAtEnd, v.weekMax)"
+              r="3.5"
+              fill="#fff"
+              stroke="#1f5fbf"
+              stroke-width="2"
+            />
+          }
+        </svg>
+        <details>
+          <summary>Data table</summary>
+          <table class="data-table compact">
+            <thead>
+              <tr>
+                <th scope="col">Week of</th>
+                <th scope="col">Opened</th>
+                <th scope="col">Closed</th>
+                <th scope="col">Open at end</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (w of v.weeks; track w.label) {
+                <tr>
+                  <th scope="row">{{ w.label }}</th>
+                  <td>{{ w.opened }}</td>
+                  <td>{{ w.closed }}</td>
+                  <td>{{ w.openAtEnd }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </details>
+      </figure>
+
+      <figure class="panel chart">
+        <figcaption><h2>Overdue reviews by discipline</h2></figcaption>
+        @if (v.overdueByDiscipline.length === 0) {
+          <p class="muted">No overdue reviews.</p>
+        } @else {
+          <ul class="hbars" aria-label="Overdue items by discipline">
+            @for (b of v.overdueByDiscipline; track b.label) {
+              <li>
+                <span class="hb-label">{{ b.label }}</span>
+                <span class="hb-track"
+                  ><span class="hb-bar danger" [style.width.%]="b.percent"></span
+                ></span>
+                <span class="hb-value">{{ b.value }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </figure>
+
+      <figure class="panel chart">
+        <figcaption>
+          <h2>Document volume by discipline and status</h2>
+          <span class="legend small">
+            @for (s of v.documentStatuses; track s) {
+              <span class="sw" [style.background]="color(s)"></span> {{ label(s) }}
+            }
+          </span>
+        </figcaption>
+        <ul class="hbars" aria-label="Documents by discipline, split by status">
+          @for (d of v.documents; track d.label) {
+            <li>
+              <span class="hb-label">{{ d.label }}</span>
+              <span class="hb-track">
+                @for (seg of d.segments; track seg.key) {
+                  @if (seg.value > 0) {
+                    <span
+                      class="hb-bar seg"
+                      [style.width.%]="seg.percent"
+                      [style.background]="color(seg.key)"
+                      [attr.title]="label(seg.key) + ': ' + seg.value"
+                    ></span>
+                  }
+                }
+              </span>
+              <span class="hb-value">{{ d.total }}</span>
+            </li>
+          }
+        </ul>
+        <details>
+          <summary>Data table</summary>
+          <table class="data-table compact">
+            <thead>
+              <tr>
+                <th scope="col">Discipline</th>
+                @for (s of v.documentStatuses; track s) {
+                  <th scope="col">{{ label(s) }}</th>
+                }
+                <th scope="col">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (d of v.documents; track d.label) {
+                <tr>
+                  <th scope="row">{{ d.label }}</th>
+                  @for (seg of d.segments; track seg.key) {
+                    <td>{{ seg.value }}</td>
+                  }
+                  <td>{{ d.total }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </details>
+      </figure>
+
+      <figure class="panel chart">
+        <figcaption><h2>RFIs by state</h2></figcaption>
+        <ul class="hbars" aria-label="RFIs by state">
+          @for (b of v.rfisByState; track b.label) {
+            <li>
+              <span class="hb-label">{{ b.label }}</span>
+              <span class="hb-track"><span class="hb-bar" [style.width.%]="b.percent"></span></span>
+              <span class="hb-value">{{ b.value }}</span>
+            </li>
+          }
+        </ul>
+      </figure>
+
+      <figure class="panel chart">
+        <figcaption><h2>Submittals by status</h2></figcaption>
+        <ul class="hbars" aria-label="Submittals by status">
+          @for (b of v.submittalsByStatus; track b.label) {
+            <li>
+              <span class="hb-label">{{ b.label }}</span>
+              <span class="hb-track"
+                ><span class="hb-bar blue" [style.width.%]="b.percent"></span
+              ></span>
+              <span class="hb-value">{{ b.value }}</span>
+            </li>
+          }
+        </ul>
+      </figure>
+    </div>
+  }
+</div>

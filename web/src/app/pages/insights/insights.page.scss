@@ -1,0 +1,165 @@
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px;
+  border-top: 4px solid var(--steel);
+
+  &:nth-child(5) {
+    border-top-color: var(--danger);
+  }
+}
+
+.kpi-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.kpi-value {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.charts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.chart {
+  margin: 0;
+  padding: 16px 20px;
+
+  &.wide {
+    grid-column: 1 / -1;
+  }
+
+  figcaption {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    h2 {
+      font-size: 1.1rem;
+    }
+  }
+}
+
+.svg {
+  width: 100%;
+  height: auto;
+}
+
+.legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  color: var(--steel-2);
+}
+
+.sw {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  margin-left: 8px;
+
+  &.line {
+    height: 3px;
+    background: #1f5fbf;
+  }
+}
+
+.hbars {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  li {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr) 36px;
+    gap: 10px;
+    align-items: center;
+  }
+}
+
+.hb-label {
+  font-size: 0.88rem;
+}
+
+.hb-track {
+  display: flex;
+  height: 16px;
+  background: var(--concrete);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.hb-bar {
+  display: block;
+  height: 100%;
+  background: var(--steel);
+
+  &.danger {
+    background: var(--danger);
+  }
+
+  &.blue {
+    background: var(--blueprint);
+  }
+
+  &.seg + .seg {
+    border-left: 2px solid #fff;
+  }
+}
+
+.hb-value {
+  font-weight: 700;
+  text-align: right;
+}
+
+details {
+  margin-top: 10px;
+
+  summary {
+    cursor: pointer;
+    color: var(--blueprint);
+    font-weight: 600;
+  }
+}
+
+.compact th,
+.compact td {
+  padding: 6px 10px;
+}
+
+@media (max-width: 1100px) {
+  .kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .charts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .hbars li {
+    grid-template-columns: 110px minmax(0, 1fr) 30px;
+  }
+}

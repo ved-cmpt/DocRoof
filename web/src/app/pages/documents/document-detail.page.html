@@ -77,7 +77,14 @@
             }
           </h2>
           @if (selected(); as s) {
-            <button mat-button (click)="download(s)">Download {{ s.versionLabel }}</button>
+            <div class="row">
+              @if (canRaiseRfi()) {
+                <button mat-stroked-button (click)="raiseRfi()">
+                  Raise RFI on this page ({{ s.versionLabel }} p.{{ viewPage() }})
+                </button>
+              }
+              <button mat-button (click)="download(s)">Download {{ s.versionLabel }}</button>
+            </div>
           }
         </div>
         <div class="panel-pad">
@@ -89,6 +96,19 @@
             />
           }
         </div>
+      </section>
+
+      <section class="panel panel-pad comments-panel" aria-labelledby="doc-comments-title">
+        <h2 id="doc-comments-title">Comments</h2>
+        <app-comments
+          resource="documents"
+          [resourceId]="d.id"
+          [comments]="comments()"
+          [revisionId]="selected()?.id ?? null"
+          [maxPage]="selected()?.pageCount ?? null"
+          [documentId]="d.id"
+          (added)="onComment($event)"
+        />
       </section>
 
       <div class="stack">

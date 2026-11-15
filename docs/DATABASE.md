@@ -94,8 +94,9 @@ the joined discipline, then a merge. `UNION ALL` (not `UNION`) avoids a sort/dis
 overlap. `IsOverdue` is computed against `SYSUTCDATETIME()` at query time, so no scheduled job is needed to keep a
 flag column in sync. The view is non-schemabound and not indexed, because its overdue flag is time-dependent.
 
-EF Core maps the view as a keyless entity (`ReviewQueueItem`, `ToView("vw_ReviewQueue")`); the review-queue
-endpoint is added in Phase 2.
+EF Core maps the view as a keyless entity (`ReviewQueueItem`, `ToView("vw_ReviewQueue")`). It is read by
+`GET /api/projects/{id}/review-queue`, by the insights endpoint (overdue by discipline) and by
+`OverdueReminderService` (which inserts one reminder per item, assignee and day).
 
 ## Transactions
 

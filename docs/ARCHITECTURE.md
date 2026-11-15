@@ -65,4 +65,57 @@ flowchart LR
 - Previews: PDFs are rendered to a canvas with pdf.js (no document scripts run), TXT is shown as escaped text,
   images via blob URLs.
 
-Workflow (RFI/submittal) state diagrams are added in Phase 2.
+## Workflows
+
+Both state machines live in `DocRoof.Domain/Workflows/Workflows.cs` as pure functions (`RfiWorkflow.Evaluate`,
+`SubmittalWorkflow.Evaluate`) and are unit tested exhaustively (every state × action). Services call them through a
+single transition method per aggregate, then check the client's rowversion and write the change, audit event and
+notifications in one transaction. `availableActions` in API responses comes from the same functions, so the UI
+never guesses — and the server re-checks every call anyway.
+
+### RFI
+
+```mermaid
+stateDiagram-v2
+  [*] --> Draft: create (Requester / PM / DC)
+  Draft --> Submitted: submit (author)
+  Submitted --> Assigned: assign reviewer + due (PM / DC)
+  Assigned --> Assigned: reassign (PM / DC)
+  Assigned --> Answered: answer (assignee)
+  Answered --> Answered: approve answer (PM)
+  Answered --> Assigned: return answer with reason (PM)
+  Answered --> Closed: close (PM, answer approved)
+  Closed --> Reopened: reopen with reason (PM / author)
+  Reopened --> Assigned: assign (PM / DC)
+```
+
+### Submittal
+
+```mermaid
+stateDiagram-v2
+  [*] --> Submitted: create with revision + reviewer (PM / DC)
+  Submitted --> InReview: start review (assigned reviewer)
+  InReview --> Approved: decide (assigned reviewer)
+  InReview --> ApprovedWithComments: decide (assigned reviewer)
+  InReview --> ReviseAndResubmit: decide (assigned reviewer)
+  Approved --> Final: finalize (PM / DC)
+  ApprovedWithComments --> Final: finalize (PM / DC)
+  ReviseAndResubmit --> Submitted: resubmit with newer revision, cycle + 1 (PM / DC)
+```
+
+Decisions also update `DocumentRevision.ApprovalStatus` (the one mutable revision column group) with its own audit
+event.
+
+## Background services
+
+| Service | Interval | Behaviour |
+| --- | --- | --- |
+| `DatabaseInitializer` | startup | migrations + idempotent sample seed (when enabled) |
+| `GuestCleanupService` | `Demo:CleanupIntervalMinutes` (15) | purges expired guest tenants and their files |
+| `OverdueReminderService` | `Reminders:IntervalMinutes` (60) | reads `vw_ReviewQueue`, inserts one `Overdue` notification per item, assignee and UTC day (unique `DedupeKey`), up to `Reminders:MaxAttempts` (3) attempts with exponential back-off, failures logged |
+
+## Guided demo task
+
+`WalkthroughService` (Angular) tracks the guided task per guest workspace in the browser: open the HVAC spec →
+inspect version history → raise an RFI on R1 page 3 → (PM) assign → (Reviewer) answer → (PM) approve → close →
+audit trail. Steps advance only when the real API call succeeds for the RFI created during the tour.

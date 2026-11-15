@@ -1,11 +1,11 @@
 # Status
 
-Last updated: 2026-11-15 (Phase 1 complete).
+Last updated: 2026-11-15 (Phase 2 complete).
 
 ## Phase checklist
 
 - [x] **Phase 1 — Foundation + vertical slice**
-- [ ] Phase 2 — Domain workflows (RFIs, submittals, comments, audit, insights, reminders, notifications)
+- [x] **Phase 2 — Domain workflows** (RFIs, submittals, comments, audit, insights, reminders, notifications)
 - [ ] Phase 3 — Extraction, hardening, presentation, deployment readiness
 
 ## Toolchain (inspected 2026-11-15)
@@ -19,6 +19,26 @@ Last updated: 2026-11-15 (Phase 1 complete).
 | Git | 2.55.0.windows.2 |
 
 No tools had to be installed. Playwright's Chromium was installed with `npx playwright install chromium`.
+
+## What works (Phase 2, verified)
+
+- Phase 2 baseline: the Phase 1 suite (45 unit, 20 integration, 9 Angular, 1 e2e) was green on the Phase 1 commit;
+  nothing was marked broken.
+- RFI state machine (Draft → Submitted → Assigned → Answered → Closed → Reopened → Assigned, reject answer →
+  Assigned) in one pure domain function and one service transition path: membership 404, role 403, invalid
+  state/duplicate approval 409, stale rowversion 409, then change + audit (before/after JSON) + notifications in one
+  transaction. Citations validated (same project, page in range) and pinned; "newer revision exists" flag.
+- Submittal state machine with one decision per cycle (also a unique index), comments required unless Approved,
+  finalize, Revise & Resubmit with a newer revision (cycle + 1); revision approval status updated through an audited
+  path.
+- Comments with optional page citations on documents, RFIs and submittals; project audit endpoint with filters and
+  paging; per-resource timelines.
+- Review queue endpoint reading `vw_ReviewQueue`; `OverdueReminderService` with configurable interval, bounded
+  retries and DB-enforced idempotency; notification bell with unread count, mark-read and mark-all.
+- Live insights endpoint + `/app/insights` SVG charts with data-table text alternatives.
+- Angular: RFI list (state, assignee, due, discipline, search filters) and detail (citation card, answers, role-aware
+  action forms, comments, timeline); submittal queue + list + detail with decision form; insights; audit; bell;
+  "Raise RFI on this page" from the document preview; guided walkthrough banner for guest workspaces.
 
 ## What works (Phase 1, verified)
 
@@ -48,7 +68,25 @@ No tools had to be installed. Playwright's Chromium was installed with `npx play
 - GitHub Actions workflow (backend, frontend, e2e, `ci-ok`) — written, **not yet run on GitHub** (no remote; owner
   action).
 
-## Commands run and real results (2026-11-15, Windows 11)
+## Commands run and real results — Phase 2 (2026-11-15, Windows 11)
+
+| Command | Result |
+| --- | --- |
+| `dotnet format api/DocRoof.slnx --verify-no-changes` | exit 0 |
+| `dotnet build api/DocRoof.slnx` | 0 warnings, 0 errors |
+| `dotnet test api/DocRoof.slnx` | Unit: **104 passed**, 0 failed. Integration (Testcontainers SQL Server 2022): **38 passed**, 0 failed |
+| `npm run lint` | All files pass linting |
+| `npm run format:check` | All matched files use Prettier code style |
+| `npm test -- --watch=false` | 5 files, **20 tests passed** |
+| `npm run build` | bundle generated, no budget errors |
+| `npx playwright test --project=chromium` | **3 passed**: smoke, full guided scenario (create RFI on R1 p.3 → assign → answer → approve → close → audit), Reset my demo |
+| `npx playwright test --project=screenshots` | wrote register, document-detail, rfi-detail, submittals, insights screenshots |
+
+Notes from the run: the first e2e attempt failed with "Demo limit reached: at most 5 workspaces per hour" — the
+per-IP quota working against repeated local runs. Development settings now raise it (production default unchanged,
+ADR-016). The persona-menu click was flaky once; the e2e helper now retries with a fresh menu.
+
+## Commands run and real results — Phase 1 (2026-11-15, Windows 11)
 
 | Command | Result |
 | --- | --- |
@@ -67,8 +105,7 @@ No tools had to be installed. Playwright's Chromium was installed with `npx play
 
 ## Known issues / limitations
 
-- RFI, submittal, insights, audit, notification and extraction screens/APIs are not built yet (Phases 2–3); the
-  landing page labels those capabilities "In progress".
+- Extraction (rules engine, suggestions UI) is not built yet (Phase 3); the landing page labels it "In progress".
 - The CI workflow has never run on GitHub (no remote configured).
 - `docker build` of the production image has not been run yet (Phase 3).
 - The OG image referenced in `index.html` (`/og-image.png`) is not generated yet (Phase 3).
@@ -80,5 +117,6 @@ See [OWNER_TODO.md](OWNER_TODO.md): create the GitHub repository and push; set t
 
 ## Next steps
 
-Phase 2: RFI and submittal state machines and APIs, comments, audit endpoint, review queue, reminders job,
-notifications, insights, Angular workflow screens, guided walkthrough, authorization test suite.
+Phase 3: rules-based extraction with page citations and human confirmation, upload/security hardening (headers,
+rate-limit and path-traversal tests, dependency audits), accessibility and mobile e2e, production Docker image,
+deployment configuration and docs, polished landing and case study.

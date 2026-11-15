@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
@@ -74,7 +74,16 @@ export class DocumentRegisterPage {
   private searchTimer: ReturnType<typeof setTimeout> | undefined;
   private sub?: Subscription;
 
+  /** Optional ?search= deep link (used by the guided task). */
+  readonly search = input<string | undefined>();
+
   constructor() {
+    effect(() => {
+      const s = this.search();
+      if (s) {
+        untracked(() => this.query.update((q) => ({ ...q, search: s, page: 1 })));
+      }
+    });
     effect(() => {
       const project = this.session.project();
       const q = this.query();

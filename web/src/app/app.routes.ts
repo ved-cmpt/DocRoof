@@ -42,6 +42,38 @@ export const routes: Routes = [
           import('./pages/documents/document-detail.page').then((m) => m.DocumentDetailPage),
       },
       {
+        path: 'rfis',
+        title: 'RFIs — DocRoof',
+        loadComponent: () => import('./pages/rfis/rfi-list.page').then((m) => m.RfiListPage),
+      },
+      {
+        path: 'rfis/:id',
+        title: 'RFI — DocRoof',
+        loadComponent: () => import('./pages/rfis/rfi-detail.page').then((m) => m.RfiDetailPage),
+      },
+      {
+        path: 'submittals',
+        title: 'Submittals — DocRoof',
+        loadComponent: () =>
+          import('./pages/submittals/submittal-list.page').then((m) => m.SubmittalListPage),
+      },
+      {
+        path: 'submittals/:id',
+        title: 'Submittal — DocRoof',
+        loadComponent: () =>
+          import('./pages/submittals/submittal-detail.page').then((m) => m.SubmittalDetailPage),
+      },
+      {
+        path: 'insights',
+        title: 'Insights — DocRoof',
+        loadComponent: () => import('./pages/insights/insights.page').then((m) => m.InsightsPage),
+      },
+      {
+        path: 'audit',
+        title: 'Audit trail — DocRoof',
+        loadComponent: () => import('./pages/audit/audit.page').then((m) => m.AuditPage),
+      },
+      {
         path: 'forbidden',
         title: 'Access denied — DocRoof',
         loadComponent: () => import('./pages/errors/error.page').then((m) => m.ForbiddenPage),

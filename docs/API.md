@@ -76,4 +76,46 @@ The OpenAPI document is served at `/openapi/v1.json` in Development only.
 | `GET /health` | *anonymous* liveness (no dependencies) |
 | `GET /health/ready` | *anonymous* readiness (database reachable) |
 
-RFI, submittal, review-queue, audit, insights, notification and extraction endpoints are added in Phases 2–3.
+## RFIs
+
+All transitions take a JSON body with `rowVersion` (base64, from the last GET). A stale value returns **409**.
+Every transition runs through one service path: membership (404) → state machine (403 wrong role / 409 invalid
+state) → rowversion (409) → change + audit event + notifications in one transaction.
+
+| Method & path | Who | Notes |
+| --- | --- | --- |
+| `GET /api/projects/{id}/rfis` | members | filters `state`, `assignee` (`me` or user id), `due` (`overdue`, `week`), `discipline`, `search`, paging. Drafts are visible to their author only |
+| `POST /api/projects/{id}/rfis` | Requester, PM, DC | `{ subject, question, sourceRevisionId, sourcePage, submit }`; revision must be in the same project and the page within its page count (400 otherwise) |
+| `GET /api/rfis/{id}` | members | detail with pinned citation (`newerRevisionExists`), responses, timeline, comments, `availableActions` for the caller |
+| `POST /api/rfis/{id}/submit` | author | Draft → Submitted |
+| `POST /api/rfis/{id}/assign` | PM, DC | `{ rowVersion, assigneeId, dueAt }` → Assigned (assignee must be a project Reviewer; due date in the future) |
+| `POST /api/rfis/{id}/answer` | assignee | `{ rowVersion, answer }` → Answered |
+| `POST /api/rfis/{id}/approve-answer` | PM | approves the pending answer; a second approval → 409 |
+| `POST /api/rfis/{id}/reject-answer` | PM | `{ rowVersion, reason }` → back to Assigned |
+| `POST /api/rfis/{id}/close` | PM | requires an approved answer → Closed |
+| `POST /api/rfis/{id}/reopen` | PM or original requester | `{ rowVersion, reason }` → Reopened (then Assign again) |
+
+## Submittals
+
+| Method & path | Who | Notes |
+| --- | --- | --- |
+| `GET /api/projects/{id}/submittals` | members | filters `status`, `reviewer`, `due`, `discipline`, paging |
+| `POST /api/projects/{id}/submittals` | PM, DC | `{ title, specSection, documentId, revisionId?, reviewerId, dueAt }` → Submitted (cycle 1); revision approval status → Pending |
+| `GET /api/submittals/{id}` | members | detail with decisions per cycle, newer revisions, timeline, comments, `availableActions` |
+| `POST /api/submittals/{id}/start-review` | assigned reviewer | Submitted → InReview |
+| `POST /api/submittals/{id}/decisions` | assigned reviewer | `{ rowVersion, decision, comments }`; comments required unless `Approved`; one decision per cycle (409); updates the revision approval status through an audited path |
+| `POST /api/submittals/{id}/finalize` | PM, DC | Approved / ApprovedWithComments → Final |
+| `POST /api/submittals/{id}/resubmit` | PM, DC | `{ rowVersion, revisionId, dueAt? }`; ReviseAndResubmit → Submitted with a **newer** revision of the same document (cycle + 1) |
+
+## Activity
+
+| Method & path | Notes |
+| --- | --- |
+| `GET/POST /api/{documents\|rfis\|submittals}/{id}/comments` | `{ body, page?, revisionId? }`; the page must exist in the cited revision of the same project |
+| `GET /api/projects/{id}/audit` | filters `resource`, `action` (prefix), `actorId`, `from`, `to`; paging (max 200) |
+| `GET /api/projects/{id}/review-queue` | from `vw_ReviewQueue`; `assignee=me|{userId}`, `overdueOnly=true` |
+| `GET /api/projects/{id}/insights` | live metrics: RFI turnaround median, submittal review median, open vs closed per week (12 weeks), overdue by discipline, document volume by discipline/status, state counts |
+| `GET /api/notifications` | caller's unread count and latest 30 |
+| `POST /api/notifications/{id}/read` · `POST /api/notifications/read-all` | only the recipient can mark a notification (404 otherwise) |
+
+Extraction endpoints are added in Phase 3.

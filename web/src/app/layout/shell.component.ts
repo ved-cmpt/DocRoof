@@ -10,6 +10,8 @@ import { label } from '../core/labels';
 import { SessionService } from '../core/session.service';
 import { ToastService } from '../core/toast.service';
 import { LogoComponent } from '../shared/brand';
+import { WalkthroughService } from '../core/walkthrough.service';
+import { NotificationBellComponent, WalkthroughBannerComponent } from './widgets';
 
 interface NavItem {
   path: string;
@@ -26,6 +28,8 @@ interface NavItem {
     MatMenuModule,
     MatSelectModule,
     LogoComponent,
+    NotificationBellComponent,
+    WalkthroughBannerComponent,
   ],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
@@ -37,7 +41,15 @@ export class ShellComponent {
   private readonly router = inject(Router);
   protected readonly label = label;
 
-  protected readonly nav: NavItem[] = [{ path: '/app/documents', label: 'Documents' }];
+  protected readonly tour = inject(WalkthroughService);
+
+  protected readonly nav: NavItem[] = [
+    { path: '/app/documents', label: 'Documents' },
+    { path: '/app/rfis', label: 'RFIs' },
+    { path: '/app/submittals', label: 'Submittals' },
+    { path: '/app/insights', label: 'Insights' },
+    { path: '/app/audit', label: 'Audit' },
+  ];
 
   protected readonly personas = signal<Persona[]>([]);
   protected readonly busy = signal(false);
@@ -89,6 +101,7 @@ export class ShellComponent {
     this.busy.set(true);
     try {
       await this.session.resetDemo();
+      this.tour.restart();
       this.toast.success('Your demo workspace was rebuilt from the template.');
       await this.router.navigateByUrl('/app/documents');
     } catch (e) {

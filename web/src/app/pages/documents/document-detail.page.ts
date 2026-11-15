@@ -12,8 +12,15 @@ import { problemMessage } from '../../core/http';
 import { auditLabel, fileSize, label, tone } from '../../core/labels';
 import { SessionService } from '../../core/session.service';
 import { ToastService } from '../../core/toast.service';
+import { WalkthroughService } from '../../core/walkthrough.service';
+import { CommentsComponent } from '../../shared/activity.components';
 import { FilePreviewComponent } from '../../shared/file-preview.component';
+import { RfiCreateDialogComponent, RfiCreateData } from '../rfis/rfi-create-dialog.component';
 import { UploadDialogComponent, UploadDialogData } from './upload-dialog.component';
+import { Comment, RfiDetail } from '../../core/api.models';
+
+/** Seeded HVAC specification used by the guided demo task. */
+export const GUIDED_DOCUMENT = 'MCC-M-23 05 00';
 
 @Component({
   selector: 'app-document-detail',
@@ -24,6 +31,7 @@ import { UploadDialogComponent, UploadDialogData } from './upload-dialog.compone
     MatButtonModule,
     MatSelectModule,
     FilePreviewComponent,
+    CommentsComponent,
   ],
   templateUrl: './document-detail.page.html',
   styleUrl: './document-detail.page.scss',
@@ -34,6 +42,14 @@ export class DocumentDetailPage {
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   protected readonly session = inject(SessionService);
+  private readonly tour = inject(WalkthroughService);
+  protected readonly comments = signal<Comment[]>([]);
+  /** Page currently shown in the preview (used to pre-fill "Raise RFI on this page"). */
+  protected readonly viewPage = signal(1);
+  protected readonly canRaiseRfi = computed(() => {
+    const role = this.doc()?.myRole;
+    return role === 'Requester' || role === 'ProjectManager' || role === 'DocumentController';
+  });
 
   /** Route param and optional query params (bound via withComponentInputBinding). */
   readonly id = input.required<string>();
@@ -86,6 +102,9 @@ export class DocumentDetailPage {
           this.selectedId.set(rev);
         }
         this.previewPage.set(Number.isFinite(page) && page > 0 ? page : null);
+        if (Number.isFinite(page) && page > 0) {
+          this.viewPage.set(page);
+        }
       });
     });
   }
@@ -104,6 +123,10 @@ export class DocumentDetailPage {
           this.compareTo.set(revs[0].id);
         }
         this.api.history(id).subscribe((h) => this.events.set(h.events));
+        this.api.comments('documents', id).subscribe((c) => this.comments.set(c));
+        if (d.documentNumber === GUIDED_DOCUMENT) {
+          this.tour.mark('open-spec');
+        }
       },
       error: (e: unknown) => {
         this.loading.set(false);
@@ -119,6 +142,10 @@ export class DocumentDetailPage {
   protected select(r: Revision): void {
     this.selectedId.set(r.id);
     this.previewPage.set(null);
+    this.viewPage.set(1);
+    if (!r.isCurrent && this.doc()?.documentNumber === GUIDED_DOCUMENT) {
+      this.tour.mark('history');
+    }
     void this.router.navigate([], {
       queryParams: { rev: r.id, page: null },
       queryParamsHandling: 'merge',
@@ -126,7 +153,38 @@ export class DocumentDetailPage {
     });
   }
 
+  protected raiseRfi(): void {
+    const d = this.doc();
+    const r = this.selected();
+    if (!d || !r) {
+      return;
+    }
+    const data: RfiCreateData = {
+      projectId: d.projectId,
+      documentId: d.id,
+      revisionId: r.id,
+      page: this.viewPage(),
+    };
+    this.dialog
+      .open(RfiCreateDialogComponent, { data, autoFocus: 'first-tabbable' })
+      .afterClosed()
+      .subscribe((rfi?: RfiDetail) => {
+        if (rfi) {
+          this.tour.mark('create-rfi', rfi.id);
+          this.toast.success(
+            `${rfi.referenceNumber} created, citing ${r.versionLabel} page ${rfi.citation.page}.`,
+          );
+          void this.router.navigate(['/app/rfis', rfi.id]);
+        }
+      });
+  }
+
+  protected onComment(c: Comment): void {
+    this.comments.update((list) => [...list, c]);
+  }
+
   protected onPreviewPage(p: number): void {
+    this.viewPage.set(p);
     void this.router.navigate([], {
       queryParams: { page: p },
       queryParamsHandling: 'merge',
@@ -151,6 +209,9 @@ export class DocumentDetailPage {
       return;
     }
     this.api.compare(d.id, from, to).subscribe((c) => this.comparison.set(c));
+    if (d.documentNumber === GUIDED_DOCUMENT) {
+      this.tour.mark('history');
+    }
   }
 
   protected uploadRevision(): void {

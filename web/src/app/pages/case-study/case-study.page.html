@@ -10,10 +10,11 @@
         where they belong: on the server and in the database.
       </p>
       <div class="status-box" role="note">
-        <strong>Project status: Phase 1 of 3 complete.</strong>
-        Foundation and the document vertical slice (auth, schema, storage, register, revisions,
-        guest demo) are built and tested. RFI/submittal workflows (Phase 2) and extraction,
-        hardening and deployment (Phase 3) are in progress. Measured test results are recorded in
+        <strong>Project status: Phase 2 of 3 complete.</strong>
+        The document vertical slice (Phase 1) and the RFI/submittal workflows, comments, audit
+        trail, review queue, reminders, notifications and live insights (Phase 2) are built and
+        tested. Extraction, security hardening and deployment readiness (Phase 3) are in progress.
+        Measured test results are recorded in
         <code>docs/STATUS.md</code> in the repository.
       </div>
     </div>
@@ -83,6 +84,22 @@
           Accessing another tenant's or project's records returns 404, so existence is not leaked.
         </li>
         <li>Audit events are append-only and written in the same transaction as the change.</li>
+        <li>
+          RFIs follow Draft → Submitted → Assigned → Answered → Closed (Reopened → Assigned); only
+          the assignee answers, only a project manager approves and closes, and a second approval
+          returns 409.
+        </li>
+        <li>
+          RFIs cite a revision of the same project and a page within its page count; citations stay
+          pinned.
+        </li>
+        <li>
+          Submittals allow one decision per review cycle by the assigned reviewer; Revise &amp;
+          Resubmit needs a newer revision and starts a new cycle.
+        </li>
+        <li>
+          Stale rowversions return 409, so concurrent edits never overwrite each other silently.
+        </li>
       </ul>
     </section>
 

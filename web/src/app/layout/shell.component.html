@@ -58,6 +58,8 @@
       </mat-menu>
     }
 
+    <app-notification-bell />
+
     <button mat-button class="user-btn" [matMenuTriggerFor]="userMenu" aria-label="Account menu">
       {{ session.isGuest() ? 'Demo' : session.me()?.displayName }}
     </button>
@@ -83,5 +85,6 @@
 }
 
 <main id="main" tabindex="-1">
+  <app-walkthrough-banner />
   <router-outlet />
 </main>

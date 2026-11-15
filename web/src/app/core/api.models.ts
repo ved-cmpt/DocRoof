@@ -246,3 +246,251 @@ export interface ProblemDetails {
   errors?: Record<string, string[]>;
   traceId?: string;
 }
+
+export interface Citation {
+  documentId: string;
+  documentNumber: string;
+  documentTitle: string;
+  revisionId: string;
+  versionLabel: string;
+  page: number;
+  pageCount: number | null;
+  newerRevisionExists: boolean;
+  currentVersionLabel: string | null;
+}
+
+export interface RfiListItem {
+  id: string;
+  referenceNumber: string;
+  subject: string;
+  state: RfiState;
+  discipline: Discipline;
+  assignee: UserRef | null;
+  dueAt: string | null;
+  isOverdue: boolean;
+  daysOverdue: number;
+  createdBy: UserRef;
+  createdAt: string;
+  citation: Citation;
+}
+
+export interface RfiResponse {
+  id: string;
+  author: UserRef;
+  answer: string;
+  createdAt: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  approvedBy: UserRef | null;
+  approvedAt: string | null;
+  rejectedBy: UserRef | null;
+  rejectedAt: string | null;
+  rejectionReason: string | null;
+}
+
+export interface Comment {
+  id: string;
+  author: UserRef;
+  body: string;
+  page: number | null;
+  revisionId: string | null;
+  versionLabel: string | null;
+  createdAt: string;
+}
+
+export interface RfiDetail {
+  id: string;
+  projectId: string;
+  projectCode: string;
+  referenceNumber: string;
+  subject: string;
+  question: string;
+  state: RfiState;
+  discipline: Discipline;
+  assignee: UserRef | null;
+  dueAt: string | null;
+  isOverdue: boolean;
+  createdBy: UserRef;
+  createdAt: string;
+  submittedAt: string | null;
+  answeredAt: string | null;
+  closedAt: string | null;
+  reopenReason: string | null;
+  approvedResponseId: string | null;
+  citation: Citation;
+  responses: RfiResponse[];
+  timeline: AuditEvent[];
+  comments: Comment[];
+  availableActions: RfiAction[];
+  myRole: ProjectRole;
+  rowVersion: string;
+}
+
+export interface RfiQuery {
+  state?: RfiState | '';
+  assignee?: string;
+  due?: '' | 'overdue' | 'week';
+  discipline?: Discipline | '';
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface CreateRfi {
+  subject: string;
+  question: string;
+  sourceRevisionId: string;
+  sourcePage: number;
+  submit: boolean;
+}
+
+export interface Decision {
+  id: string;
+  cycle: number;
+  revisionId: string;
+  versionLabel: string;
+  reviewer: UserRef;
+  decision: ReviewDecisionType;
+  comments: string;
+  createdAt: string;
+}
+
+export interface SubmittalListItem {
+  id: string;
+  number: string;
+  title: string;
+  specSection: string;
+  status: SubmittalStatus;
+  cycle: number;
+  discipline: Discipline;
+  reviewer: UserRef;
+  dueAt: string | null;
+  isOverdue: boolean;
+  daysOverdue: number;
+  documentId: string;
+  documentNumber: string;
+  versionLabel: string;
+  submittedAt: string;
+}
+
+export interface SubmittalDetail {
+  id: string;
+  projectId: string;
+  projectCode: string;
+  number: string;
+  title: string;
+  specSection: string;
+  status: SubmittalStatus;
+  cycle: number;
+  discipline: Discipline;
+  reviewer: UserRef;
+  dueAt: string | null;
+  isOverdue: boolean;
+  submittedBy: UserRef;
+  submittedAt: string;
+  reviewStartedAt: string | null;
+  decidedAt: string | null;
+  finalizedAt: string | null;
+  documentId: string;
+  documentNumber: string;
+  documentTitle: string;
+  revisionId: string;
+  versionLabel: string;
+  revisionApprovalStatus: RevisionApprovalStatus;
+  newerRevisions: RevisionChip[];
+  decisions: Decision[];
+  timeline: AuditEvent[];
+  comments: Comment[];
+  availableActions: SubmittalAction[];
+  myRole: ProjectRole;
+  rowVersion: string;
+}
+
+export interface SubmittalQuery {
+  status?: SubmittalStatus | '';
+  reviewer?: string;
+  due?: '' | 'overdue' | 'week';
+  discipline?: Discipline | '';
+  page?: number;
+  pageSize?: number;
+}
+
+export interface ReviewQueueItem {
+  itemType: 'Rfi' | 'Submittal';
+  itemId: string;
+  reference: string;
+  title: string;
+  state: string;
+  assignee: UserRef | null;
+  dueAt: string | null;
+  discipline: string;
+  isOverdue: boolean;
+  daysOverdue: number | null;
+}
+
+export interface NotificationItem {
+  id: string;
+  projectId: string;
+  kind: string;
+  resource: ResourceType;
+  resourceId: string;
+  message: string;
+  createdAt: string;
+  isRead: boolean;
+}
+
+export interface NotificationFeed {
+  unreadCount: number;
+  items: NotificationItem[];
+}
+
+export interface CountItem {
+  key: string;
+  count: number;
+}
+
+export interface SeriesPoint {
+  weekStart: string;
+  opened: number;
+  closed: number;
+  openAtEnd: number;
+}
+
+export interface Insights {
+  generatedAt: string;
+  rfiTurnaroundMedianDays: number | null;
+  closedRfiSample: number;
+  submittalReviewMedianDays: number | null;
+  openRfis: number;
+  openSubmittals: number;
+  overdueItems: number;
+  rfiOpenVsClosed: SeriesPoint[];
+  overdueByDiscipline: CountItem[];
+  documentsByDiscipline: { discipline: string; total: number; byStatus: CountItem[] }[];
+  rfisByState: CountItem[];
+  submittalsByStatus: CountItem[];
+}
+
+export interface AuditQuery {
+  resource?: ResourceType | '';
+  action?: string;
+  actorId?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export const RFI_STATES: RfiState[] = [
+  'Draft',
+  'Submitted',
+  'Assigned',
+  'Answered',
+  'Closed',
+  'Reopened',
+];
+export const SUBMITTAL_STATUSES: SubmittalStatus[] = [
+  'Submitted',
+  'InReview',
+  'Approved',
+  'ApprovedWithComments',
+  'ReviseAndResubmit',
+  'Final',
+];

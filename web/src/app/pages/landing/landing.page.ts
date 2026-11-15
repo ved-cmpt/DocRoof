@@ -75,7 +75,12 @@ export class LandingPage {
     {
       title: 'RFI and submittal workflows',
       body: 'Server-enforced state machines with assignments, approvals, rowversion concurrency and audit events.',
-      status: 'In progress',
+      status: 'Live',
+    },
+    {
+      title: 'Review queue, reminders and insights',
+      body: 'A documented SQL view drives the review queue and overdue flags; an idempotent background job creates reminders; insights are computed live.',
+      status: 'Live',
     },
     {
       title: 'Rules-based extraction',

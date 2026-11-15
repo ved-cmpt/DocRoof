@@ -18,6 +18,6 @@ test('landing → Try the demo → register shows seeded documents', async ({ pa
 
   await table.getByRole('link', { name: 'MCC-M-23 05 00' }).click();
   await expect(page.getByRole('heading', { name: 'Version history' })).toBeVisible();
-  await expect(page.getByText('MCC-M-23-05-00_R0.pdf')).toBeVisible();
+  await expect(page.getByRole('button', { name: /MCC-M-23-05-00_R0.pdf/ })).toBeVisible();
   await expect(page.getByText('Superseded').first()).toBeVisible();
 });

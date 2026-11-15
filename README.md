@@ -13,9 +13,10 @@ ASP.NET Core (.NET 10) and SQL Server 2022.
 
 ## Status
 
-Phase 1 of 3 is complete: authentication, schema and migrations, synthetic documents, storage abstraction,
-document upload/version/search/download, Angular register and detail screens, landing page, guest demo, tests,
-Docker Compose and CI. See [docs/STATUS.md](docs/STATUS.md) for exactly what was run and the results.
+Phases 1 and 2 of 3 are complete: documents and revisions, RFI and submittal workflows with approvals,
+comments, audit trail, review queue, overdue reminders, notifications, live insights and the guided demo. Phase 3
+(extraction, hardening, deployment readiness) is in progress. See [docs/STATUS.md](docs/STATUS.md) for exactly
+what was run and the results.
 
 ## Quick start (Windows PowerShell)
 
@@ -59,6 +60,9 @@ npx playwright test --project=chromium        # needs API (5180) and web (4210) 
 | Document register | filters (discipline, status, category, review status, revision), server-side paging, revision chips |
 | Revisions | immutable rows with SHA-256, supersession chain, metadata comparison, authorized streamed downloads |
 | Files | magic-byte allow-list, size limit, generated storage keys, sanitized names, local-disk or SQL `varbinary` storage |
+| RFIs | Draft → Submitted → Assigned → Answered → Closed (→ Reopened), PM approval before close, page-pinned citations |
+| Submittals | one decision per cycle by the assigned reviewer, Revise & Resubmit with a newer revision, finalize |
+| Oversight | review queue from a SQL view, idempotent overdue reminders, notification bell, live insights charts, filtered audit trail |
 | Guest demo | isolated tenant per visitor cloned from the seed template, five personas, reset, 24 h cleanup |
 | Security | Identity cookie + antiforgery, per-project role checks, 404 for cross-tenant access, rate limits, CSP |
 | Database | FKs, unique and check constraints, rowversion, immutability and append-only triggers, documented review-queue view |
