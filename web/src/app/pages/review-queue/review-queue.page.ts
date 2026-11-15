@@ -35,7 +35,7 @@ type Scope = 'me' | 'all' | 'overdue';
     <app-topbar title="Review queue" />
     <div class="page">
       <section class="card" aria-labelledby="queue-title" [attr.aria-busy]="loading()">
-        <h2 id="queue-title" class="visually-hidden">Review queue</h2>
+        <h2 id="queue-title" class="visually-hidden">Items waiting for review</h2>
         <div class="tabs" role="tablist" aria-label="Queue scope">
           @for (t of tabs; track t.key) {
             <button

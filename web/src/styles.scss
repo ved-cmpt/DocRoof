@@ -633,6 +633,7 @@ code,
 .form-grid {
   display: grid;
   gap: 16px;
+  align-content: start;
 }
 
 .form-row {
