@@ -141,7 +141,7 @@
   padding: 0 8px;
   border: 1px solid var(--border-strong);
   border-radius: var(--r-sm);
-  color: var(--text-3);
+  color: var(--text-2);
   font-size: 11px;
   white-space: nowrap;
 }
@@ -207,7 +207,7 @@
   border-radius: 4px;
   font-family: var(--font-mono);
   font-size: 10px;
-  color: var(--text-3);
+  color: var(--text-2);
 
   &.current {
     border-color: transparent;
@@ -217,7 +217,7 @@
 }
 
 .dash {
-  color: var(--text-3);
+  color: var(--text-2);
 }
 
 /* The arriving revision */

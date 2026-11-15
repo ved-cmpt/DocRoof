@@ -14,7 +14,7 @@ test('guided demo: HVAC spec → history → RFI with page citation → assign �
 
   // 1. Open the HVAC specification.
   await page.getByRole('table').getByRole('link', { name: 'MCC-M-23 05 00' }).click();
-  await expect(page.getByRole('heading', { name: 'Version history' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Version history', exact: true })).toBeVisible();
 
   // 2. Inspect version history: open the superseded R0, then return to the current R1.
   await page.getByRole('button', { name: /MCC-M-23-05-00_R0\.pdf/ }).click();

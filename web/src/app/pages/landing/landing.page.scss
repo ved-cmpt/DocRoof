@@ -81,13 +81,11 @@ h2 {
   margin: 64px auto 0;
   transform: translateY(24px);
   animation: rise 0.8s 0.15s ease-out forwards;
-  opacity: 0;
 }
 
 @keyframes rise {
   to {
     transform: none;
-    opacity: 1;
   }
 }
 
@@ -177,7 +175,7 @@ h2 {
 }
 
 .step-n {
-  color: var(--text-3);
+  color: var(--text-2);
   font-weight: 600;
   margin-right: 2px;
 }
@@ -448,7 +446,6 @@ h2 {
 
 @media (prefers-reduced-motion: reduce) {
   .hero-visual {
-    opacity: 1;
     transform: none;
     animation: none;
   }

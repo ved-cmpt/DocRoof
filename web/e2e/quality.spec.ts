@@ -59,6 +59,7 @@ test.describe('accessibility (axe, WCAG 2.1 A/AA rules)', () => {
     await goTo(page, 'RFIs');
     await page.getByRole('button', { name: 'New RFI' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
+    await page.waitForTimeout(500); // let the open animation finish before measuring contrast
     await axe(page);
   });
 });
@@ -101,8 +102,9 @@ test('dialogs fit a 390 px screen as a full-height sheet with the actions visibl
 
 test('keyboard only: skip link, primary navigation and opening a document', async ({ page }) => {
   await page.goto('/');
-  // Wait for the lazily loaded page before tabbing, so focus order is final.
+  // Wait for the lazily loaded page and its assets before tabbing, so focus order is final.
   await expect(page.getByRole('link', { name: 'Try the live demo' })).toBeVisible();
+  await page.waitForLoadState('networkidle');
   await page.keyboard.press('Tab');
   const skip = page.getByRole('link', { name: 'Skip to content' });
   await expect(skip).toBeFocused();
@@ -118,7 +120,9 @@ test('keyboard only: skip link, primary navigation and opening a document', asyn
     );
   }
   expect(reached).toBe(true);
+  await expect(page.getByRole('link', { name: 'Try the live demo' })).toBeFocused();
   await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/(demo|app)/);
   await expect(page.getByRole('heading', { name: 'Document register' })).toBeVisible({
     timeout: 30_000,
   });
@@ -136,7 +140,7 @@ test('keyboard only: skip link, primary navigation and opening a document', asyn
   }
   expect(onDocument).toBe(true);
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('heading', { name: 'Version history' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Version history', exact: true })).toBeVisible();
 });
 
 test('review queue lists the work waiting on a reviewer', async ({ page }) => {
