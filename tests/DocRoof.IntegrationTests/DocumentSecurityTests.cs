@@ -25,7 +25,8 @@ public class DocumentSecurityTests(AppFixture app)
     // ---------- Must-pass: unauthorized users cannot obtain other tenants' / projects' files ----------
 
     [Fact]
-    public async Task Unauthorized_users_cannot_download_another_tenants_file_by_guessed_id()
+    [Trait("Category", "MustPass")]
+    public async Task MustPass1_Unauthorized_users_cannot_obtain_another_tenants_or_projects_files_by_guessed_ids()
     {
         var owner = Factory.CreateApiClient();
         await owner.StartDemoAsync();
@@ -49,7 +50,8 @@ public class DocumentSecurityTests(AppFixture app)
     }
 
     [Fact]
-    public async Task Project_non_members_get_404_even_inside_the_same_tenant()
+    [Trait("Category", "MustPass")]
+    public async Task MustPass1_Project_non_members_get_404_for_files_even_inside_the_same_tenant()
     {
         var client = Factory.CreateApiClient();
         await client.StartDemoAsync();
@@ -76,7 +78,8 @@ public class DocumentSecurityTests(AppFixture app)
     // ---------- Must-pass: new revision creates a new row; old bytes/checksum/references intact ----------
 
     [Fact]
-    public async Task Uploading_a_new_revision_creates_a_new_row_and_keeps_old_bytes_checksum_and_citations()
+    [Trait("Category", "MustPass")]
+    public async Task MustPass2_New_revision_creates_a_new_row_and_keeps_old_bytes_checksum_and_references()
     {
         var client = Factory.CreateApiClient();
         var session = await client.StartDemoAsync();
@@ -154,7 +157,8 @@ public class DocumentSecurityTests(AppFixture app)
     // ---------- Must-pass: magic-byte allow-list, size limit, sanitized names ----------
 
     [Fact]
-    public async Task Disguised_executable_is_rejected_and_nothing_is_stored()
+    [Trait("Category", "MustPass")]
+    public async Task MustPass3_Disguised_executable_is_rejected_by_magic_bytes_and_nothing_is_stored()
     {
         var client = Factory.CreateApiClient();
         await client.StartDemoAsync();
@@ -175,7 +179,8 @@ public class DocumentSecurityTests(AppFixture app)
     }
 
     [Fact]
-    public async Task Oversize_upload_is_rejected_with_413()
+    [Trait("Category", "MustPass")]
+    public async Task MustPass3_Oversize_upload_is_rejected_with_413()
     {
         var client = Factory.CreateApiClient();
         await client.StartDemoAsync();
@@ -188,7 +193,8 @@ public class DocumentSecurityTests(AppFixture app)
     }
 
     [Fact]
-    public async Task Download_uses_sanitized_name_attachment_disposition_and_nosniff()
+    [Trait("Category", "MustPass")]
+    public async Task MustPass3_Download_names_are_sanitized_and_served_as_nosniff_attachments()
     {
         var client = Factory.CreateApiClient();
         await client.StartDemoAsync();

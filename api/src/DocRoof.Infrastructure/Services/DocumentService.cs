@@ -32,6 +32,8 @@ public sealed partial class DocumentService(
     UserDirectory directory,
     TimeProvider clock,
     IOptions<StorageOptions> storageOptions,
+    IOptions<DemoOptions> demoOptions,
+    ICurrentUser currentUser,
     ILogger<DocumentService> logger)
 {
     public static readonly ProjectRole[] UploadRoles = [ProjectRole.DocumentController, ProjectRole.ProjectManager];
@@ -107,7 +109,7 @@ public sealed partial class DocumentService(
         var revisions = await RevisionsAsync(doc, acc.TenantId, ct);
         return new DocumentDetailDto(doc.Id, doc.ProjectId, project.Code, project.Title, doc.DocumentNumber, doc.Title,
             doc.Category, doc.Discipline, doc.Status, doc.CurrentRevisionId, revisions, acc.Role, UploadRoles.Contains(acc.Role),
-            doc.CreatedAt, doc.UpdatedAt, Convert.ToBase64String(doc.RowVersion));
+            doc.CreatedAt, doc.UpdatedAt, Convert.ToBase64String(doc.RowVersion), doc.IssueDate, doc.SpecSection);
     }
 
     public async Task<DocumentHistoryDto> HistoryAsync(Guid documentId, CancellationToken ct)
@@ -160,6 +162,7 @@ public sealed partial class DocumentService(
     public async Task<DocumentDetailDto> CreateAsync(Guid projectId, CreateDocumentCommand cmd, CancellationToken ct)
     {
         var acc = await access.RequireProjectAsync(projectId, ct, UploadRoles);
+        await EnforceGuestQuotaAsync(acc.TenantId, cmd.File.Content.LongLength, ct);
         var number = cmd.DocumentNumber.Trim();
         if (await db.Documents.AnyAsync(d => d.ProjectId == projectId && d.DocumentNumber == number, ct))
         {
@@ -203,6 +206,7 @@ public sealed partial class DocumentService(
     public async Task<RevisionDto> AddRevisionAsync(Guid documentId, AddRevisionCommand cmd, CancellationToken ct)
     {
         var (doc, acc) = await access.RequireDocumentAsync(documentId, ct, UploadRoles);
+        await EnforceGuestQuotaAsync(acc.TenantId, cmd.File.Content.LongLength, ct);
         var prepared = Prepare(cmd.File, acc.TenantId);
         var existingLabels = await db.DocumentRevisions.Where(r => r.DocumentId == doc.Id).Select(r => r.VersionLabel).ToListAsync(ct);
         var label = NormalizeLabel(cmd.VersionLabel) ?? NextLabel(existingLabels);
@@ -249,6 +253,25 @@ public sealed partial class DocumentService(
         }
 
         return new FileDownload(stream, rev.MimeType, FileNameSanitizer.Sanitize(rev.FileName), rev.Sha256, rev.HasActiveContent);
+    }
+
+    /// <summary>Guest workspaces get a small upload allowance so one visitor cannot fill the shared database.</summary>
+    private async Task EnforceGuestQuotaAsync(Guid tenantId, long incomingBytes, CancellationToken ct)
+    {
+        if (!currentUser.IsGuest)
+        {
+            return;
+        }
+
+        var tenantCreated = await db.Tenants.Where(t => t.Id == tenantId).Select(t => t.CreatedAt).FirstAsync(ct);
+        var uploads = db.DocumentRevisions.Where(r => r.Document!.Project!.TenantId == tenantId && r.UploadedAt >= tenantCreated);
+        var count = await uploads.CountAsync(ct);
+        var bytes = await uploads.SumAsync(r => (long?)r.ByteSize, ct) ?? 0;
+        var opt = demoOptions.Value;
+        if (count >= opt.MaxUploadsPerWorkspace || bytes + incomingBytes > opt.MaxUploadBytesPerWorkspace)
+        {
+            throw new TooManyRequestsException($"Guest workspace upload quota reached ({opt.MaxUploadsPerWorkspace} files / {opt.MaxUploadBytesPerWorkspace / (1024 * 1024)} MB). Use \"Reset my demo\" to start over.");
+        }
     }
 
     public static bool PreviewSupported(DocumentRevision r) =>

@@ -88,6 +88,9 @@ public static class DependencyInjection
         services.AddScoped<ReviewQueueService>();
         services.AddScoped<NotificationService>();
         services.AddScoped<InsightsService>();
+        services.Configure<DocRoof.Infrastructure.Extraction.ExtractionOptions>(config.GetSection(DocRoof.Infrastructure.Extraction.ExtractionOptions.Section));
+        services.AddHttpClient<DocRoof.Infrastructure.Extraction.LanguageModelExtractionEngine>();
+        services.AddScoped<DocRoof.Infrastructure.Extraction.ExtractionService>();
         services.Configure<ReminderOptions>(config.GetSection(ReminderOptions.Section));
         services.AddSingleton<OverdueReminderService>();
         services.AddHostedService(sp => sp.GetRequiredService<OverdueReminderService>());

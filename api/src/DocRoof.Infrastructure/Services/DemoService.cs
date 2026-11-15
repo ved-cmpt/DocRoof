@@ -28,6 +28,10 @@ public sealed class DemoOptions
     public string IpHashSalt { get; set; } = "docroof-local-salt";
 
     public string StartPersona { get; set; } = "requester";
+
+    public int MaxUploadsPerWorkspace { get; set; } = 30;
+
+    public long MaxUploadBytesPerWorkspace { get; set; } = 60L * 1024 * 1024;
 }
 
 public sealed record PersonaDto(string Key, Guid UserId, string DisplayName, string JobTitle, string Roles, bool IsActive);

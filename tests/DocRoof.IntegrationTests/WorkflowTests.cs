@@ -173,7 +173,8 @@ public class WorkflowTests(AppFixture app)
     // ---------- Duplicate approval / decision → 409 with no DB change ----------
 
     [Fact]
-    public async Task Duplicate_rfi_approval_returns_409_and_changes_nothing()
+    [Trait("Category", "MustPass")]
+    public async Task MustPass4_Duplicate_rfi_approval_returns_409_and_changes_nothing()
     {
         var c = Factory.CreateApiClient();
         await c.StartDemoAsync();
@@ -188,7 +189,8 @@ public class WorkflowTests(AppFixture app)
     }
 
     [Fact]
-    public async Task Duplicate_review_decision_returns_409_and_changes_nothing()
+    [Trait("Category", "MustPass")]
+    public async Task MustPass4_Duplicate_review_decision_returns_409_and_changes_nothing()
     {
         var c = Factory.CreateApiClient();
         await c.StartDemoAsync();
@@ -207,7 +209,8 @@ public class WorkflowTests(AppFixture app)
     }
 
     [Fact]
-    public async Task Invalid_transitions_are_rejected_with_409()
+    [Trait("Category", "MustPass")]
+    public async Task MustPass4_Invalid_rfi_and_submittal_transitions_are_rejected_with_409()
     {
         var c = Factory.CreateApiClient();
         await c.StartDemoAsync();

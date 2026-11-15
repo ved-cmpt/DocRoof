@@ -63,6 +63,12 @@ builder.Services.AddAntiforgery(o =>
     o.Cookie.SecurePolicy = insecureCookies ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
 });
 
+builder.Services.AddHsts(o =>
+{
+    o.MaxAge = TimeSpan.FromDays(365);
+    o.IncludeSubDomains = true;
+});
+
 builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme).AddIdentityCookies();
 builder.Services.ConfigureApplicationCookie(o =>
 {
@@ -78,6 +84,15 @@ builder.Services.ConfigureApplicationCookie(o =>
 builder.Services.Configure<SecurityStampValidatorOptions>(o => o.ValidationInterval = TimeSpan.FromMinutes(5));
 builder.Services.AddAuthorizationBuilder()
     .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+
+// Compress static assets only. API JSON is excluded on purpose (it can carry antiforgery tokens; avoids BREACH-style leaks).
+builder.Services.AddResponseCompression(o =>
+{
+    o.EnableForHttps = true;
+    o.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
+    o.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+    o.MimeTypes = ["text/css", "application/javascript", "text/javascript", "image/svg+xml", "text/html"];
+});
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<DocRoofDbContext>("database", tags: ["ready"]);
@@ -107,6 +122,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseResponseCompression();
 app.UseDefaultFiles();
 app.UseStaticFiles(new StaticFileOptions
 {

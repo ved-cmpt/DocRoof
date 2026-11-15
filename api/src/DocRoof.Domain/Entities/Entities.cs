@@ -45,6 +45,12 @@ public class Document
     public Discipline Discipline { get; set; }
     public string Title { get; set; } = "";
     public DocumentStatus Status { get; set; }
+
+    /// <summary>Issue date confirmed by a person (for example from an accepted extraction suggestion).</summary>
+    public DateTime? IssueDate { get; set; }
+
+    /// <summary>CSI MasterFormat-style section, e.g. "23 05 00".</summary>
+    public string? SpecSection { get; set; }
     public Guid? CurrentRevisionId { get; set; }
     public DocumentRevision? CurrentRevision { get; set; }
     public Guid CreatedById { get; set; }

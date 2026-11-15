@@ -73,7 +73,8 @@ public sealed record RevisionDto(
 public sealed record DocumentDetailDto(
     Guid Id, Guid ProjectId, string ProjectCode, string ProjectTitle, string DocumentNumber, string Title,
     DocumentCategory Category, Discipline Discipline, DocumentStatus Status, Guid? CurrentRevisionId,
-    IReadOnlyList<RevisionDto> Revisions, ProjectRole MyRole, bool CanUpload, DateTime CreatedAt, DateTime UpdatedAt, string RowVersion);
+    IReadOnlyList<RevisionDto> Revisions, ProjectRole MyRole, bool CanUpload, DateTime CreatedAt, DateTime UpdatedAt, string RowVersion,
+    DateTime? IssueDate, string? SpecSection);
 
 public sealed record AuditEventDto(
     long Id, DateTime Timestamp, UserRef? Actor, ResourceType Resource, Guid ResourceId, string Action, string ChangeJson, string? Reference);
