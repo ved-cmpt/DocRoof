@@ -26,8 +26,8 @@ jobs:
       frontend: ${{ steps.filter.outputs.frontend }}
       docker: ${{ steps.filter.outputs.docker }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -55,8 +55,8 @@ jobs:
     if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
       - run: dotnet restore api/DocRoof.slnx
@@ -65,7 +65,7 @@ jobs:
       # Integration tests start SQL Server 2022 with Testcontainers (Docker is available on ubuntu runners).
       - run: dotnet test api/DocRoof.slnx --no-build -c Release --logger "trx;LogFilePrefix=results" --results-directory TestResults
       - run: dotnet list api/DocRoof.slnx package --vulnerable --include-transitive
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: backend-test-results
@@ -80,8 +80,8 @@ jobs:
       run:
         working-directory: web
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -104,11 +104,11 @@ jobs:
     env:
       MSSQL_SA_PASSWORD: DocRoof_CI_Only_2026!
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -140,7 +140,7 @@ jobs:
       - name: Playwright (smoke, guided scenario, reset, accessibility, mobile, keyboard, extraction)
         working-directory: web
         run: npx playwright test --project=chromium
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: e2e-artifacts
@@ -158,7 +158,7 @@ jobs:
     env:
       MSSQL_SA_PASSWORD: DocRoof_CI_Only_2026!
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build and start the production image with SQL Server
         run: docker compose --profile app up -d --build
       - name: Wait for readiness
