@@ -1,94 +1,127 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PublicFooterComponent, PublicHeaderComponent } from '../../shared/brand';
+import { IconName } from '../../shared/icons.generated';
+import { RevealDirective } from '../../shared/reveal.directive';
 import { MEASURED_TESTS } from '../../shared/site';
+import { IconComponent } from '../../shared/ui';
+import { HeroPreviewComponent } from './hero-preview.component';
 
-interface Capability {
+interface TourTab {
+  key: string;
+  label: string;
+  icon: IconName;
   title: string;
-  body: string;
-  status: 'Live' | 'In progress';
-}
-
-interface Workflow {
-  role: string;
-  summary: string;
-  steps: string[];
+  points: string[];
+  image: string;
+  alt: string;
 }
 
 @Component({
   selector: 'app-landing-page',
-  imports: [RouterLink, PublicHeaderComponent, PublicFooterComponent],
+  imports: [
+    RouterLink,
+    PublicHeaderComponent,
+    PublicFooterComponent,
+    HeroPreviewComponent,
+    IconComponent,
+    RevealDirective,
+  ],
   templateUrl: './landing.page.html',
   styleUrl: './landing.page.scss',
 })
 export class LandingPage {
   protected readonly counts = MEASURED_TESTS;
+  protected readonly totalTests =
+    MEASURED_TESTS.unit + MEASURED_TESTS.integration + MEASURED_TESTS.angular + MEASURED_TESTS.e2e;
 
-  protected readonly workflows: Workflow[] = [
+  protected readonly steps: { icon: IconName; title: string; text: string }[] = [
     {
-      role: 'Document Controller',
-      summary: 'Keeps the register authoritative.',
-      steps: [
-        'Uploads drawings, specs and product data with discipline and category',
-        'Issues new revisions; earlier bytes and checksums stay untouched',
-        'Distributes the current revision while superseded ones remain traceable',
-      ],
+      icon: 'upload',
+      title: 'Upload',
+      text: 'Add a drawing or spec. Every revision keeps its checksum.',
     },
     {
-      role: 'Reviewer',
-      summary: 'Answers questions with evidence.',
-      steps: [
-        'Sees assigned RFIs and submittals with due dates and overdue flags',
-        'Answers RFIs that cite an exact revision and page',
-        'Records one review decision per submittal cycle',
-      ],
+      icon: 'message-square-text',
+      title: 'Ask',
+      text: 'Raise an RFI pinned to the exact revision and page.',
     },
     {
-      role: 'Project Manager',
-      summary: 'Owns approvals and escalations.',
-      steps: [
-        'Assigns reviewers and due dates',
-        'Approves or returns RFI answers before closing',
-        'Reads the audit trail and turnaround insights',
-      ],
+      icon: 'circle-check',
+      title: 'Approve',
+      text: 'Reviewers answer, managers approve. Every step is on record.',
     },
   ];
 
-  protected readonly capabilities: Capability[] = [
+  protected readonly tabs: TourTab[] = [
     {
-      title: 'Controlled document register',
-      body: 'Search and filter by discipline, status, category, review status and revision, with server-side paging.',
-      status: 'Live',
+      key: 'documents',
+      label: 'Documents',
+      icon: 'file-text',
+      title: 'A register that never loses history',
+      points: [
+        'Every upload is a new revision with a SHA-256 checksum.',
+        'Superseded revisions stay one click away.',
+        'Preview PDFs in the browser and link to any page.',
+      ],
+      image: '/screenshots/tour-documents.png',
+      alt: 'Document register with discipline, status, revision and review columns',
     },
     {
-      title: 'Immutable revisions',
-      body: 'Every upload is a new row with a SHA-256 checksum. A SQL trigger, an EF Core interceptor and the service layer all block edits to stored revisions.',
-      status: 'Live',
+      key: 'rfis',
+      label: 'RFIs',
+      icon: 'message-square-text',
+      title: 'Questions pinned to the exact page',
+      points: [
+        'Raise an RFI from the page you are reading.',
+        'The citation stays on that revision after updates.',
+        'Assign, answer, approve and close, each step on record.',
+      ],
+      image: '/screenshots/tour-rfis.png',
+      alt: 'RFI record with its question, pinned citation, answer and details panel',
     },
     {
-      title: 'Safe files',
-      body: 'Magic-byte allow-list (PDF, TXT, PNG, JPG), size limits, generated storage keys, sanitized download names and sandboxed previews.',
-      status: 'Live',
+      key: 'submittals',
+      label: 'Submittals',
+      icon: 'clipboard-check',
+      title: 'One decision per review cycle',
+      points: [
+        'Approve, approve with comments, or ask for a resubmission.',
+        'A resubmission starts a new cycle with a newer revision.',
+        'The review queue shows what is waiting and what is late.',
+      ],
+      image: '/screenshots/tour-submittals.png',
+      alt: 'Submittal record with review decisions and a details panel',
     },
     {
-      title: 'Isolated guest demo',
-      body: 'Each visitor gets a private tenant cloned from the seed template, with persona switching and automatic 24-hour cleanup.',
-      status: 'Live',
-    },
-    {
-      title: 'RFI and submittal workflows',
-      body: 'Server-enforced state machines with assignments, approvals, rowversion concurrency and audit events.',
-      status: 'Live',
-    },
-    {
-      title: 'Review queue, reminders and insights',
-      body: 'A documented SQL view drives the review queue and overdue flags; an idempotent background job creates reminders; insights are computed live.',
-      status: 'Live',
-    },
-    {
-      title: 'Rules-based extraction',
-      body: 'Deterministic suggestions for title, number, dates and spec sections, each citing its source page, accepted or rejected by a person.',
-      status: 'Live',
+      key: 'insights',
+      label: 'Insights',
+      icon: 'chart-column',
+      title: 'Numbers computed live',
+      points: [
+        'Turnaround, open items and overdue reviews from the database.',
+        'Every chart can switch to a data table.',
+        'Nothing on the page is hard-coded.',
+      ],
+      image: '/screenshots/tour-insights.png',
+      alt: 'Insights with key figures and charts for RFIs and overdue reviews',
     },
   ];
+
+  protected readonly active = signal('documents');
+
+  protected select(key: string): void {
+    this.active.set(key);
+  }
+
+  protected move(delta: number): void {
+    const i = this.tabs.findIndex((t) => t.key === this.active());
+    const next = this.tabs[(i + delta + this.tabs.length) % this.tabs.length];
+    this.active.set(next.key);
+    document.getElementById('tour-tab-' + next.key)?.focus();
+  }
+
+  protected current(): TourTab {
+    return this.tabs.find((t) => t.key === this.active()) ?? this.tabs[0];
+  }
 }

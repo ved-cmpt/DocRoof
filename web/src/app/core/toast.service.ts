@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Observable } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class ToastService {
@@ -19,5 +20,12 @@ export class ToastService {
       panelClass: 'toast-error',
       politeness: 'assertive',
     });
+  }
+
+  /** A small toast with one action; emits when the action is chosen. */
+  offer(message: string, action: string, duration = 9000): Observable<void> {
+    return this.snack
+      .open(message, action, { duration, panelClass: 'toast-offer', politeness: 'polite' })
+      .onAction();
   }
 }

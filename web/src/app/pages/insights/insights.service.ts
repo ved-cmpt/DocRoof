@@ -88,17 +88,12 @@ export class InsightsService {
           note: 'submission to decision',
         },
         {
-          label: 'Open RFIs',
-          value: String(raw.openRfis),
-          note: 'submitted, assigned, answered or reopened',
+          label: 'Open items',
+          value: String(raw.openRfis + raw.openSubmittals),
+          note: `${raw.openRfis} RFIs · ${raw.openSubmittals} submittals`,
         },
         {
-          label: 'Open submittals',
-          value: String(raw.openSubmittals),
-          note: 'submitted or in review',
-        },
-        {
-          label: 'Overdue items',
+          label: 'Overdue',
           value: String(raw.overdueItems),
           note: 'from the review-queue view',
         },

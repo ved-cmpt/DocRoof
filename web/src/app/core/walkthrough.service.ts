@@ -34,7 +34,7 @@ export const TOUR_STEPS: TourStepInfo[] = [
     key: 'assign',
     title: 'Switch to the Project Manager and assign it',
     persona: 'manager',
-    hint: 'Switch persona to Priya Raman, open your RFI and assign Marcus Lindqvist with a due date.',
+    hint: 'Switch persona to Priya Raman from the profile menu, then assign Marcus Lindqvist.',
   },
   {
     key: 'answer',
@@ -65,20 +65,28 @@ export const TOUR_STEPS: TourStepInfo[] = [
 interface TourState {
   done: TourStep[];
   rfiId: string | null;
-  hidden: boolean;
+  /** The compact tour popover is shown (opt-in; hidden by default). */
+  open: boolean;
+  minimized: boolean;
+  /** The one-time welcome toast was shown for this workspace. */
+  welcomed: boolean;
 }
 
-/** Progress of the guided demo task, stored per guest workspace in this browser only. */
+const EMPTY: TourState = { done: [], rfiId: null, open: false, minimized: false, welcomed: false };
+
+/** Progress of the optional guided tour, stored per guest workspace in this browser only. */
 @Injectable({ providedIn: 'root' })
 export class WalkthroughService {
   private readonly session = inject(SessionService);
-  private readonly state = signal<TourState>({ done: [], rfiId: null, hidden: false });
+  private readonly state = signal<TourState>({ ...EMPTY });
   private loadedFor: string | null = null;
 
   readonly steps = TOUR_STEPS;
   readonly done = computed(() => this.state().done);
   readonly rfiId = computed(() => this.state().rfiId);
-  readonly hidden = computed(() => this.state().hidden);
+  readonly open = computed(() => this.active() && this.state().open);
+  readonly minimized = computed(() => this.state().minimized);
+  readonly welcomed = computed(() => this.state().welcomed);
   readonly current = computed(
     () => TOUR_STEPS.find((s) => !this.state().done.includes(s.key)) ?? null,
   );
@@ -110,12 +118,31 @@ export class WalkthroughService {
     this.update({ ...s, done, rfiId: step === 'create-rfi' && rfiId ? rfiId : s.rfiId });
   }
 
-  setHidden(hidden: boolean): void {
-    this.update({ ...this.state(), hidden });
+  /** Opens the tour popover ("Take the tour"). */
+  start(): void {
+    this.update({ ...this.state(), open: true, minimized: false, welcomed: true });
   }
 
+  close(): void {
+    this.update({ ...this.state(), open: false });
+  }
+
+  setMinimized(minimized: boolean): void {
+    this.update({ ...this.state(), minimized });
+  }
+
+  markWelcomed(): void {
+    this.update({ ...this.state(), welcomed: true });
+  }
+
+  /** Starts the steps over and shows the popover. */
   restart(): void {
-    this.update({ done: [], rfiId: null, hidden: false });
+    this.update({ ...this.state(), done: [], rfiId: null, open: true, minimized: false });
+  }
+
+  /** After "Reset my demo": progress is cleared, visibility is kept. */
+  reset(): void {
+    this.update({ ...this.state(), done: [], rfiId: null });
   }
 
   private update(next: TourState): void {
@@ -133,12 +160,18 @@ export class WalkthroughService {
     try {
       const raw = localStorage.getItem(`docroof.tour.${tenant}`);
       if (raw) {
-        const parsed = JSON.parse(raw) as TourState;
-        return { done: parsed.done ?? [], rfiId: parsed.rfiId ?? null, hidden: !!parsed.hidden };
+        const parsed = JSON.parse(raw) as Partial<TourState>;
+        return {
+          done: parsed.done ?? [],
+          rfiId: parsed.rfiId ?? null,
+          open: !!parsed.open,
+          minimized: !!parsed.minimized,
+          welcomed: !!parsed.welcomed,
+        };
       }
     } catch {
       /* ignore corrupt or unavailable storage */
     }
-    return { done: [], rfiId: null, hidden: false };
+    return { ...EMPTY };
   }
 }

@@ -1,167 +1,319 @@
-<div class="page">
-  <nav class="crumbs small" aria-label="Breadcrumb">
-    <a routerLink="/app/documents">Document register</a> <span aria-hidden="true">/</span>
-    <span aria-current="page">{{ doc()?.documentNumber ?? 'Document' }}</span>
-  </nav>
+<app-topbar
+  [title]="doc()?.documentNumber ?? 'Document'"
+  [monoTitle]="!!doc()"
+  [crumbs]="[{ label: 'Documents', link: '/app/documents' }]"
+>
+  @if (doc(); as d) {
+    @if (current(); as c) {
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="download(c)"
+        [attr.aria-label]="'Download current revision ' + c.versionLabel"
+      >
+        <app-icon name="download" [size]="16" /><span class="btn-text">Download</span>
+      </button>
+    }
+    @if (d.canUpload) {
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="uploadRevision()"
+        aria-label="Upload new revision"
+      >
+        <app-icon name="upload" [size]="16" /><span class="btn-text">Upload revision</span>
+      </button>
+    }
+  }
+</app-topbar>
 
+<div class="page">
   @if (loading() && !doc()) {
-    <div class="panel panel-pad stack" role="status" aria-label="Loading document">
-      <span class="skeleton" style="width: 40%"></span>
-      <span class="skeleton"></span>
-      <span class="skeleton"></span>
+    <div class="record" role="status" aria-label="Loading document">
+      <div class="card card-body stack">
+        <span class="skeleton" style="width: 30%"></span>
+        <span class="skeleton" style="height: 320px"></span>
+      </div>
+      <div class="card card-body stack">
+        <span class="skeleton"></span><span class="skeleton"></span
+        ><span class="skeleton" style="width: 60%"></span>
+      </div>
     </div>
   } @else if (notFound()) {
-    <section class="panel state-box">
-      <h1>Document not found</h1>
-      <p>It does not exist or belongs to a project you are not a member of.</p>
-      <a mat-flat-button routerLink="/app/documents">Back to the register</a>
+    <section class="card">
+      <app-empty
+        icon="file-text"
+        heading="Document not found"
+        text="It does not exist or belongs to a project you are not a member of."
+      >
+        <a class="btn btn-secondary" routerLink="/app/documents">Back to the register</a>
+      </app-empty>
     </section>
   } @else if (error()) {
-    <div class="error-box" role="alert">{{ error() }}</div>
+    <section class="card">
+      <app-empty icon="triangle-alert" heading="The document could not be loaded" [text]="error()">
+        <button type="button" class="btn btn-secondary" (click)="load(id())">Try again</button>
+      </app-empty>
+    </section>
   } @else if (doc(); as d) {
-    <div class="page-header">
+    <div class="record-head">
       <div>
-        <p class="eyebrow">{{ d.projectCode }} · {{ label(d.category) }}</p>
-        <h1>
-          <span class="mono docnum">{{ d.documentNumber }}</span> {{ d.title }}
-        </h1>
-      </div>
-      <div class="row">
-        @if (current(); as c) {
-          <button mat-stroked-button (click)="download(c)">
-            Download current ({{ c.versionLabel }})
-          </button>
-        }
-        @if (d.canUpload) {
-          <button mat-flat-button (click)="uploadRevision()">Upload new revision</button>
-        }
+        <span class="ref">{{ label(d.category) }} · {{ label(d.discipline) }}</span>
+        <h2>{{ d.title }}</h2>
       </div>
     </div>
 
-    <dl class="title-block">
-      <div>
-        <dt>Discipline</dt>
-        <dd>{{ label(d.discipline) }}</dd>
-      </div>
-      <div>
-        <dt>Status</dt>
-        <dd>
-          <span [class]="'chip ' + tone(d.status)">{{ label(d.status) }}</span>
-        </dd>
-      </div>
-      <div>
-        <dt>Current revision</dt>
-        <dd class="mono">{{ current()?.versionLabel ?? '—' }}</dd>
-      </div>
-      <div>
-        <dt>Revisions</dt>
-        <dd>{{ d.revisions.length }}</dd>
-      </div>
-      <div>
-        <dt>Your role</dt>
-        <dd>{{ label(d.myRole) }}</dd>
-      </div>
-      <div>
-        <dt>Issue date</dt>
-        <dd>{{ d.issueDate ? (d.issueDate | date: 'mediumDate' : 'UTC') : '—' }}</dd>
-      </div>
-      <div>
-        <dt>Spec section</dt>
-        <dd class="mono">{{ d.specSection ?? '—' }}</dd>
-      </div>
-      <div>
-        <dt>Last updated</dt>
-        <dd>{{ d.updatedAt | date: 'medium' }}</dd>
-      </div>
-    </dl>
-
-    <div class="detail-grid">
+    <div class="record">
       <div class="stack">
-        <section class="panel" aria-labelledby="preview-title" id="preview">
-          <div class="panel-header">
+        <section class="card" aria-labelledby="preview-title" id="preview">
+          <div class="card-header">
             <h2 id="preview-title">
               Preview · <span class="mono">{{ selected()?.versionLabel }}</span>
-              @if (selected() && !selected()!.isCurrent) {
-                <span class="chip warn plain">Superseded</span>
-              }
             </h2>
+            @if (selected() && !selected()!.isCurrent) {
+              <app-status value="Superseded" tone="warning" />
+            }
+            <span class="spacer"></span>
             @if (selected(); as s) {
-              <div class="row">
-                @if (canRaiseRfi()) {
-                  <button mat-stroked-button (click)="raiseRfi()">
-                    Raise RFI on this page ({{ s.versionLabel }} p.{{ viewPage() }})
-                  </button>
-                }
-                <button mat-button (click)="download(s)">Download {{ s.versionLabel }}</button>
-              </div>
+              @if (canRaiseRfi()) {
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm"
+                  (click)="raiseRfi()"
+                  [attr.aria-label]="
+                    'Raise RFI on this page (' + s.versionLabel + ' p.' + viewPage() + ')'
+                  "
+                >
+                  <app-icon name="message-square-text" [size]="16" /> Raise RFI · p.{{ viewPage() }}
+                </button>
+              }
+              <button
+                type="button"
+                class="btn btn-icon"
+                (click)="download(s)"
+                [attr.aria-label]="'Download ' + s.versionLabel"
+                [matTooltip]="'Download ' + s.versionLabel"
+              >
+                <app-icon name="download" />
+              </button>
             }
           </div>
-          <div class="panel-pad">
-            @if (selected(); as s) {
-              <app-file-preview
-                [revision]="s"
-                [requestedPage]="previewPage()"
-                (pageChange)="onPreviewPage($event)"
-              />
-            }
-          </div>
+          @if (selected(); as s) {
+            <app-file-preview
+              [revision]="s"
+              [requestedPage]="previewPage()"
+              (pageChange)="onPreviewPage($event)"
+            />
+          }
         </section>
 
-        <section class="panel panel-pad comments-panel" aria-labelledby="doc-comments-title">
-          <h2 id="doc-comments-title">Comments</h2>
-          <app-comments
-            resource="documents"
-            [resourceId]="d.id"
-            [comments]="comments()"
-            [revisionId]="selected()?.id ?? null"
-            [maxPage]="selected()?.pageCount ?? null"
-            [documentId]="d.id"
-            (added)="onComment($event)"
-          />
+        <section class="card" aria-label="Discussion and history">
+          <div class="tabs" role="tablist" aria-label="Document sections">
+            @for (t of tabs(); track t.key) {
+              <button
+                type="button"
+                role="tab"
+                [id]="'doc-tab-' + t.key"
+                [attr.aria-selected]="tab() === t.key"
+                [attr.tabindex]="tab() === t.key ? 0 : -1"
+                aria-controls="doc-tabpanel"
+                (click)="tab.set(t.key)"
+                (keydown.arrowRight)="moveTab(1)"
+                (keydown.arrowLeft)="moveTab(-1)"
+              >
+                {{ t.label }}
+                @if (t.count !== undefined) {
+                  <span class="tab-count">{{ t.count }}</span>
+                }
+              </button>
+            }
+          </div>
+          <div id="doc-tabpanel" role="tabpanel" [attr.aria-labelledby]="'doc-tab-' + tab()">
+            @switch (tab()) {
+              @case ('comments') {
+                <div class="card-body">
+                  <app-comments
+                    resource="documents"
+                    [resourceId]="d.id"
+                    [comments]="comments()"
+                    [revisionId]="selected()?.id ?? null"
+                    [maxPage]="selected()?.pageCount ?? null"
+                    [documentId]="d.id"
+                    (added)="onComment($event)"
+                  />
+                </div>
+              }
+              @case ('activity') {
+                <app-timeline [events]="events()" label="Document activity" />
+              }
+              @case ('compare') {
+                <div class="card-body">
+                  <div class="compare-form">
+                    <div class="field">
+                      <label class="field-label" for="cmp-from">From</label>
+                      <select
+                        id="cmp-from"
+                        class="select"
+                        [ngModel]="compareFrom()"
+                        (ngModelChange)="compareFrom.set($event)"
+                      >
+                        @for (r of d.revisions; track r.id) {
+                          <option [value]="r.id">{{ r.versionLabel }}</option>
+                        }
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label class="field-label" for="cmp-to">To</label>
+                      <select
+                        id="cmp-to"
+                        class="select"
+                        [ngModel]="compareTo()"
+                        (ngModelChange)="compareTo.set($event)"
+                      >
+                        @for (r of d.revisions; track r.id) {
+                          <option [value]="r.id">{{ r.versionLabel }}</option>
+                        }
+                      </select>
+                    </div>
+                    <button type="button" class="btn btn-secondary" (click)="runCompare()">
+                      <app-icon name="git-compare" [size]="16" /> Compare
+                    </button>
+                  </div>
+                  @if (comparison(); as c) {
+                    <p class="compare-summary" role="status">
+                      <app-status
+                        [value]="c.contentChanged ? 'Changed' : 'Identical'"
+                        [tone]="c.contentChanged ? 'info' : 'neutral'"
+                        [label]="
+                          c.contentChanged ? 'File content changed' : 'Identical file content'
+                        "
+                      />
+                      <span class="text-2"
+                        >Size {{ c.sizeDelta >= 0 ? '+' : '−'
+                        }}{{ size(c.sizeDelta < 0 ? -c.sizeDelta : c.sizeDelta) }}</span
+                      >
+                    </p>
+                    <div class="table-wrap bordered">
+                      <table class="table table-compact">
+                        <caption class="visually-hidden">
+                          Metadata differences
+                        </caption>
+                        <thead>
+                          <tr>
+                            <th scope="col">Field</th>
+                            <th scope="col">{{ c.from.versionLabel }}</th>
+                            <th scope="col">{{ c.to.versionLabel }}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (ch of c.changes; track ch.field) {
+                            <tr>
+                              <th scope="row" class="text-2">{{ ch.field }}</th>
+                              <td class="cell">{{ ch.from }}</td>
+                              <td class="cell">{{ ch.to }}</td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  }
+                </div>
+              }
+            }
+          </div>
         </section>
       </div>
 
-      <div class="stack">
-        <section class="panel" aria-labelledby="history-title">
-          <div class="panel-header"><h2 id="history-title">Version history</h2></div>
+      <aside class="record-aside" aria-label="Document properties">
+        <section class="card" aria-labelledby="props-title">
+          <div class="card-header"><h2 id="props-title">Details</h2></div>
+          <dl class="props" data-testid="doc-properties">
+            <div>
+              <dt>Status</dt>
+              <dd><app-status [value]="d.status" /></dd>
+            </div>
+            <div>
+              <dt>Current revision</dt>
+              <dd>
+                @if (current(); as c) {
+                  <span class="rev-chip current">{{ c.versionLabel }}</span>
+                } @else {
+                  —
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>Discipline</dt>
+              <dd>{{ label(d.discipline) }}</dd>
+            </div>
+            <div>
+              <dt>Category</dt>
+              <dd>{{ label(d.category) }}</dd>
+            </div>
+            <div>
+              <dt>Spec section</dt>
+              <dd class="mono">{{ d.specSection ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>Issue date</dt>
+              <dd>{{ d.issueDate ? (d.issueDate | shortDate) : '—' }}</dd>
+            </div>
+            <div>
+              <dt>Updated</dt>
+              <dd [title]="d.updatedAt | longDate">{{ d.updatedAt | shortDate }}</dd>
+            </div>
+            <div>
+              <dt>Your role</dt>
+              <dd>{{ label(d.myRole) }}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="card" aria-labelledby="history-title">
+          <div class="card-header">
+            <h2 id="history-title">Version history</h2>
+            <span class="meta">{{ d.revisions.length }} revisions</span>
+          </div>
           <ol class="revisions">
             @for (r of d.revisions; track r.id) {
-              <li [class.active]="selected()?.id === r.id">
+              <li>
                 <button
+                  type="button"
                   class="rev-row"
+                  [class.active]="selected()?.id === r.id"
                   (click)="select(r)"
                   [attr.aria-pressed]="selected()?.id === r.id"
                 >
                   <span class="rev-chip" [class.current]="r.isCurrent">{{ r.versionLabel }}</span>
                   <span class="rev-main">
                     <span class="rev-file">{{ r.fileName }}</span>
-                    <span class="small muted">
-                      {{ r.uploadedBy.displayName }} · {{ r.uploadedAt | date: 'mediumDate' }} ·
+                    <span class="rev-meta">
+                      {{ r.uploadedBy.displayName }} · {{ r.uploadedAt | shortDate }} ·
                       {{ size(r.byteSize) }}
                       @if (r.pageCount) {
                         · {{ r.pageCount }} {{ r.pageCount === 1 ? 'page' : 'pages' }}
                       }
                     </span>
                     @if (r.changeNote) {
-                      <span class="small">{{ r.changeNote }}</span>
+                      <span class="rev-note">{{ r.changeNote }}</span>
                     }
-                    <span class="mono sha small muted" [attr.title]="'SHA-256 ' + r.sha256"
-                      >SHA-256 {{ r.sha256.slice(0, 16) }}…</span
-                    >
-                  </span>
-                  <span class="rev-status">
-                    @if (r.isCurrent) {
-                      <span class="chip success plain">Current</span>
-                    } @else {
-                      <span class="chip plain">Superseded</span>
-                    }
-                    @if (r.approvalStatus !== 'NotReviewed') {
-                      <span [class]="'chip ' + tone(r.approvalStatus)">{{
-                        label(r.approvalStatus)
-                      }}</span>
-                    }
-                    @if (r.hasActiveContent) {
-                      <span class="chip danger plain">Download only</span>
+                    <span class="rev-tags">
+                      @if (r.isCurrent) {
+                        <app-status value="Current" tone="success" />
+                      } @else {
+                        <app-status value="Superseded" />
+                      }
+                      @if (r.approvalStatus !== 'NotReviewed') {
+                        <app-status [value]="r.approvalStatus" />
+                      }
+                      @if (r.hasActiveContent) {
+                        <app-status value="Download only" tone="danger" />
+                      }
+                    </span>
+                    @if (selected()?.id === r.id) {
+                      <span class="rev-sha mono" [title]="'SHA-256 ' + r.sha256"
+                        >SHA-256 {{ r.sha256.slice(0, 12) }}…</span
+                      >
                     }
                   </span>
                 </button>
@@ -178,89 +330,7 @@
             (metadataChanged)="load(d.id)"
           />
         }
-
-        @if (d.revisions.length > 1) {
-          <section class="panel" aria-labelledby="compare-title">
-            <div class="panel-header"><h2 id="compare-title">Compare revisions</h2></div>
-            <div class="panel-pad">
-              <div class="row">
-                <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                  <mat-label>From</mat-label>
-                  <mat-select
-                    [value]="compareFrom()"
-                    (selectionChange)="compareFrom.set($event.value)"
-                  >
-                    @for (r of d.revisions; track r.id) {
-                      <mat-option [value]="r.id">{{ r.versionLabel }}</mat-option>
-                    }
-                  </mat-select>
-                </mat-form-field>
-                <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                  <mat-label>To</mat-label>
-                  <mat-select [value]="compareTo()" (selectionChange)="compareTo.set($event.value)">
-                    @for (r of d.revisions; track r.id) {
-                      <mat-option [value]="r.id">{{ r.versionLabel }}</mat-option>
-                    }
-                  </mat-select>
-                </mat-form-field>
-                <button mat-stroked-button (click)="runCompare()">Compare</button>
-              </div>
-              @if (comparison(); as c) {
-                <p class="small" role="status">
-                  {{ c.contentChanged ? 'File content changed' : 'Identical file content' }} · size
-                  {{ c.sizeDelta >= 0 ? '+' : ''
-                  }}{{ size(c.sizeDelta < 0 ? -c.sizeDelta : c.sizeDelta) }}
-                  {{ c.sizeDelta < 0 ? 'smaller' : '' }}
-                </p>
-                <table class="data-table compact">
-                  <caption class="visually-hidden">
-                    Metadata differences
-                  </caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">Field</th>
-                      <th scope="col">{{ c.from.versionLabel }}</th>
-                      <th scope="col">{{ c.to.versionLabel }}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (ch of c.changes; track ch.field) {
-                      <tr>
-                        <th scope="row">{{ ch.field }}</th>
-                        <td class="cell">{{ ch.from }}</td>
-                        <td class="cell">{{ ch.to }}</td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              }
-            </div>
-          </section>
-        }
-
-        <section class="panel" aria-labelledby="audit-title">
-          <div class="panel-header"><h2 id="audit-title">Audit trail</h2></div>
-          @if (events().length === 0) {
-            <p class="panel-pad muted">No events recorded yet.</p>
-          } @else {
-            <ol class="timeline">
-              @for (e of events(); track e.id) {
-                <li>
-                  <span class="when small muted">{{ e.timestamp | date: 'MMM d, y, HH:mm' }}</span>
-                  <span>
-                    <strong>{{ e.actor?.displayName ?? 'System' }}</strong>
-                    {{ auditLabel(e.action) }}
-                    <span class="mono small">{{ e.reference }}</span>
-                  </span>
-                  @if (changes(e)) {
-                    <span class="small muted">{{ changes(e) }}</span>
-                  }
-                </li>
-              }
-            </ol>
-          }
-        </section>
-      </div>
+      </aside>
     </div>
   }
 </div>

@@ -13,6 +13,7 @@ and Azure accounts; see [OWNER_TODO.md](OWNER_TODO.md)).
   `infra/azure/sql-free.bicep`, docs/DEPLOYMENT.md and smoke scripts are ready.
 - [x] Published on GitHub — public repository https://github.com/ved-cmpt/DocRoof, CI green on `main`, branch
   protection on `main`, release [v1.0.0](https://github.com/ved-cmpt/DocRoof/releases/tag/v1.0.0).
+- [x] **UI redesign** (branch `redesign`) — new brand, sidebar app shell and consistent screens; see below.
 
 ## Toolchain (inspected 2026-11-15)
 
@@ -87,6 +88,38 @@ page, test hardening); the landing page itself was unchanged afterwards.
   containers are positioned.
 - The keyboard test flaked once (tabbing before the lazy page rendered) → it now waits for content.
 
+## UI redesign (2026-11-15, branch `redesign`)
+
+The owner rejected the first UI. Everything visual was redesigned; backend behaviour, routes and business rules are
+unchanged (ADR-024). New: brand tokens (warm neutrals, one teal brand colour, status tints), Plus Jakarta Sans / Inter /
+JetBrains Mono, a generated Lucide icon set, a new logo, favicon PNGs and social image; a collapsible sidebar shell
+with project switcher, profile menu (persona, notifications, tour, reset, sign out), slim top bar and dismissible demo
+pill; grid tables with filter chips; record pages with properties panels and sentence-style activity; dialogs for
+upload, new RFI, assign, return/reopen reasons, decision and resubmit; compact insights; a review-queue page; split
+sign-in; a stepped demo start screen with an offline state; a new landing page (HTML/CSS live product preview,
+3-step "how it works", product tour tabs with 2x crops, trust strip) and a ~40 % shorter case study with redrawn
+diagrams. The guided task is now opt-in (profile menu → Take the tour, plus a one-time welcome toast).
+
+| Command | Result |
+| --- | --- |
+| `npx playwright test --project=review` (captures every public page, app screen, dialog, profile menu and drawer at 1440×900 and 390×844 into `.local/review/`) | 3 capture → review → fix passes. Fixed: dialog title styling, login overflow at 390 px (13 px), stretched form rows in mobile sheets, duplicate “Sign in” link, unaligned numeric columns, fractional chart axis, duplicate headings on error pages and the review queue. Last pass: 4 passed, no horizontal page overflow reported |
+| `dotnet format api/DocRoof.slnx --verify-no-changes` | exit 0 |
+| `dotnet build api/DocRoof.slnx` | 0 warnings, 0 errors |
+| `dotnet test api/DocRoof.slnx` | Unit **121 passed**, integration **57 passed** (Testcontainers SQL Server 2022) |
+| `npm run lint` · `npm run format:check` | all files pass · Prettier clean |
+| `npm test -- --watch=false` | 10 files, **37 tests passed** (new: activity sentences, chips/relative time, demo offline detection, opt-in tour) |
+| `npm run build` | bundle generated, no budget warnings (initial 465 kB raw / 113 kB transfer) |
+| `npx playwright test --project=chromium` | **13 passed**; then `--repeat-each=2`: 26 passed. Covers guided scenario (with the opt-in tour), reset, axe on landing, sign-in, register, RFI detail, insights and the New RFI dialog (0 violations), mobile 390 px + drawer, dialogs fitting 390 px, keyboard-only, review queue, extraction |
+| `npx playwright test --project=screenshots` | regenerated 2x README screenshots, four 1184×660 product-tour crops, `og-image.png`, `favicon-32.png`, `apple-touch-icon.png` |
+| `npm audit --omit=dev` · `dotnet list … --vulnerable --include-transitive` | 0 vulnerabilities · no vulnerable packages (5 projects) |
+| `docker compose --profile app up -d --build` + `./scripts/smoke.sh http://localhost:5180` | image built, container ready, smoke test passed |
+| `npx lighthouse@12.8.2 http://localhost:5180/` (production container) | mobile: Performance **84**, Accessibility **100**, Best Practices **100**, SEO **100** (LCP 3.7 s, CLS 0.002) · `--preset=desktop`: **99 / 100 / 100 / 100** (LCP 0.8 s, CLS 0.003) |
+
+Problems found by the tests during the redesign: axe flagged text in `--text-3` (decoration grey, below AA) on
+superseded revision tags and contrast measured mid-animation on the hero and dialogs → tags use the secondary text
+colour, the hero no longer fades in, and the dialog axe check waits for the open animation. The keyboard test flaked
+once (Enter pressed before the landing page settled) → it now waits for network idle and asserts focus first.
+
 ## GitHub publication (2026-11-15)
 
 | Command | Result |
@@ -117,8 +150,8 @@ Dependabot opened PRs #1 (docker), #2 (actions) and #3 (npm) on first push. They
 ## Known issues and limitations
 
 - Hosted deployment not done (owner accounts: Render + Azure SQL free offer).
-- Mobile Lighthouse performance (72) is limited by client-side rendering of the landing page; prerendering `/` and
-  `/case-study` would be the next step.
+- Mobile Lighthouse performance (84 after the redesign; LCP 3.7 s) is limited by client-side rendering of the landing
+  page; prerendering `/` and `/case-study` would be the next step.
 - No malware scanning, no OCR, heuristic PDF active-content detection, in-app notifications only (see SECURITY.md).
 - Rules-based extraction targets title-block conventions like the seeded documents'.
 - Rate limiting is in-memory per instance.

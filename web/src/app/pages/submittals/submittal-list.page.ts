@@ -1,9 +1,5 @@
-import { DatePipe } from '@angular/common';
 import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ApiService } from '../../core/api.service';
@@ -11,132 +7,122 @@ import {
   DISCIPLINES,
   Member,
   Paged,
-  ReviewQueueItem,
   SUBMITTAL_STATUSES,
   SubmittalDetail,
   SubmittalListItem,
   SubmittalQuery,
 } from '../../core/api.models';
 import { problemMessage } from '../../core/http';
-import { label, tone } from '../../core/labels';
+import { label } from '../../core/labels';
 import { SessionService } from '../../core/session.service';
+import { TopbarComponent } from '../../layout/topbar.component';
+import { openDialog } from '../../shared/dialog';
+import {
+  EmptyStateComponent,
+  FilterChipComponent,
+  FilterOption,
+  IconComponent,
+  PagerComponent,
+  PersonComponent,
+  ShortDatePipe,
+  SkeletonRowsComponent,
+  StatusChipComponent,
+} from '../../shared/ui';
 import { SubmittalCreateDialogComponent } from './submittal-create-dialog.component';
 
 @Component({
   selector: 'app-submittal-list',
-  imports: [RouterLink, DatePipe, MatButtonModule, MatSelectModule, MatPaginatorModule],
+  imports: [
+    RouterLink,
+    TopbarComponent,
+    IconComponent,
+    FilterChipComponent,
+    PagerComponent,
+    StatusChipComponent,
+    PersonComponent,
+    SkeletonRowsComponent,
+    EmptyStateComponent,
+    ShortDatePipe,
+  ],
   template: `
+    <app-topbar title="Submittals">
+      @if (canCreate()) {
+        <button type="button" class="btn btn-primary" (click)="create()" aria-label="New submittal">
+          <app-icon name="plus" [size]="16" /><span class="btn-text">New submittal</span>
+        </button>
+      }
+    </app-topbar>
     <div class="page">
-      <div class="page-header">
-        <div>
-          <p class="eyebrow">{{ session.project()?.code }} · Submittals and review queue</p>
-          <h1>Submittals</h1>
-          <p>
-            One decision per review cycle; Revise &amp; Resubmit starts a new cycle with a new
-            revision.
-          </p>
-        </div>
-        @if (canCreate()) {
-          <button mat-flat-button (click)="create()">New submittal</button>
-        }
-      </div>
-
-      <section class="panel queue" aria-labelledby="queue-title">
-        <div class="panel-header">
-          <h2 id="queue-title">My review queue</h2>
-          <span class="small muted"
-            >From the vw_ReviewQueue SQL view · RFIs and submittals assigned to you</span
-          >
-        </div>
-        @if (queue().length === 0) {
-          <p class="panel-pad muted">Nothing is waiting on you.</p>
-        } @else {
-          <ul class="queue-list">
-            @for (q of queue(); track q.itemId) {
-              <li>
-                <a
-                  [routerLink]="[q.itemType === 'Rfi' ? '/app/rfis' : '/app/submittals', q.itemId]"
-                  class="mono"
-                  >{{ q.reference }}</a
-                >
-                <span class="title">{{ q.title }}</span>
-                <span [class]="'chip ' + tone(q.state)">{{ label(q.state) }}</span>
-                <span class="small muted">{{
-                  q.dueAt ? (q.dueAt | date: 'mediumDate') : 'No due date'
-                }}</span>
-                @if (q.isOverdue) {
-                  <span class="overdue-badge">Overdue {{ q.daysOverdue }}d</span>
-                }
-              </li>
-            }
-          </ul>
-        }
-      </section>
-
-      <section class="panel filters" aria-label="Filters">
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Status</mat-label>
-          <mat-select
-            [value]="query().status ?? ''"
-            (selectionChange)="set('status', $event.value)"
-          >
-            <mat-option value="">All statuses</mat-option>
-            @for (s of statuses; track s) {
-              <mat-option [value]="s">{{ label(s) }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Reviewer</mat-label>
-          <mat-select
-            [value]="query().reviewer ?? ''"
-            (selectionChange)="set('reviewer', $event.value)"
-          >
-            <mat-option value="">Any reviewer</mat-option>
-            <mat-option value="me">Me</mat-option>
-            @for (m of reviewers(); track m.userId) {
-              <mat-option [value]="m.userId">{{ m.displayName }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Due</mat-label>
-          <mat-select [value]="query().due ?? ''" (selectionChange)="set('due', $event.value)">
-            <mat-option value="">Any due date</mat-option>
-            <mat-option value="overdue">Overdue</mat-option>
-            <mat-option value="week">Due in 7 days</mat-option>
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Discipline</mat-label>
-          <mat-select
-            [value]="query().discipline ?? ''"
-            (selectionChange)="set('discipline', $event.value)"
-          >
-            <mat-option value="">All disciplines</mat-option>
-            @for (d of disciplines; track d) {
-              <mat-option [value]="d">{{ label(d) }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-      </section>
-
-      <section class="panel" aria-labelledby="sub-results" [attr.aria-busy]="loading()">
+      <section class="card" aria-labelledby="sub-results" [attr.aria-busy]="loading()">
         <h2 id="sub-results" class="visually-hidden">All submittals</h2>
+        <div class="toolbar" role="toolbar" aria-label="Filters">
+          <app-filter-chip
+            label="Status"
+            [options]="statusOptions"
+            [value]="query().status"
+            (valueChange)="set('status', $any($event))"
+          />
+          <app-filter-chip
+            label="Reviewer"
+            [options]="reviewerOptions()"
+            [value]="query().reviewer"
+            allLabel="Anyone"
+            (valueChange)="set('reviewer', $event)"
+          />
+          <app-filter-chip
+            label="Due"
+            [options]="dueOptions"
+            [value]="query().due"
+            allLabel="Any date"
+            (valueChange)="set('due', $any($event))"
+          />
+          <app-filter-chip
+            label="Discipline"
+            [options]="disciplineOptions"
+            [value]="query().discipline"
+            (valueChange)="set('discipline', $any($event))"
+          />
+          @if (activeFilters() > 0) {
+            <button type="button" class="btn btn-ghost btn-sm" (click)="clear()">
+              Clear <span class="filter-badge">{{ activeFilters() }}</span>
+            </button>
+          }
+          <span class="count">
+            @if (result(); as r) {
+              {{ r.totalCount }} {{ r.totalCount === 1 ? 'submittal' : 'submittals' }}
+            }
+          </span>
+        </div>
         @if (error()) {
-          <div class="panel-pad">
-            <div class="error-box" role="alert">{{ error() }}</div>
-          </div>
+          <app-empty
+            icon="triangle-alert"
+            heading="Submittals could not be loaded"
+            [text]="error()"
+          >
+            <button type="button" class="btn btn-secondary" (click)="retry()">Try again</button>
+          </app-empty>
         } @else if (loading() && !result()) {
-          <div class="panel-pad stack" role="status" aria-label="Loading submittals">
-            <span class="skeleton"></span><span class="skeleton"></span>
-          </div>
+          <app-skeleton-rows label="Loading submittals" [widths]="[8, 32, 12, 6, 16, 14, 8]" />
         } @else if (result(); as r) {
           @if (r.items.length === 0) {
-            <div class="state-box"><h3>No submittals match</h3></div>
+            <app-empty
+              icon="clipboard-check"
+              heading="No submittals match"
+              [text]="
+                activeFilters() > 0
+                  ? 'Try removing a filter.'
+                  : 'Submit a document for review to start.'
+              "
+            >
+              @if (activeFilters() > 0) {
+                <button type="button" class="btn btn-secondary" (click)="clear()">
+                  Clear filters
+                </button>
+              }
+            </app-empty>
           } @else {
-            <div class="table-scroll">
-              <table class="data-table">
+            <div class="table-wrap">
+              <table class="table">
                 <caption class="visually-hidden">
                   Submittals,
                   {{
@@ -149,34 +135,33 @@ import { SubmittalCreateDialogComponent } from './submittal-create-dialog.compon
                     <th scope="col">Number</th>
                     <th scope="col">Title</th>
                     <th scope="col">Status</th>
-                    <th scope="col">Cycle</th>
+                    <th scope="col" class="num-cell">Cycle</th>
                     <th scope="col">Document</th>
                     <th scope="col">Reviewer</th>
-                    <th scope="col">Due</th>
+                    <th scope="col" class="num-cell">Due</th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (s of r.items; track s.id) {
-                    <tr>
-                      <td class="mono">
-                        <a [routerLink]="['/app/submittals', s.id]">{{ s.number }}</a>
-                      </td>
+                    <tr class="clickable" (click)="open(s.id, $event)">
                       <td>
+                        <a class="cell-link doc-num" [routerLink]="['/app/submittals', s.id]">{{
+                          s.number
+                        }}</a>
+                      </td>
+                      <td class="title-cell">
                         {{ s.title
-                        }}<span class="small muted block"
-                          >{{ s.specSection }} · {{ label(s.discipline) }}</span
-                        >
+                        }}<span class="sub">{{ s.specSection }} · {{ label(s.discipline) }}</span>
                       </td>
-                      <td>
-                        <span [class]="'chip ' + tone(s.status)">{{ label(s.status) }}</span>
-                      </td>
-                      <td>{{ s.cycle }}</td>
-                      <td class="mono small">{{ s.documentNumber }} {{ s.versionLabel }}</td>
-                      <td>{{ s.reviewer.displayName }}</td>
-                      <td class="small">
-                        {{ s.dueAt ? (s.dueAt | date: 'mediumDate') : '—' }}
+                      <td><app-status [value]="s.status" /></td>
+                      <td class="num-cell">{{ s.cycle }}</td>
+                      <td class="nowrap doc">{{ s.documentNumber }} · {{ s.versionLabel }}</td>
+                      <td><app-person [name]="s.reviewer.displayName" /></td>
+                      <td class="num-cell">
                         @if (s.isOverdue) {
-                          <span class="overdue-badge">Overdue {{ s.daysOverdue }}d</span>
+                          <app-status value="Overdue" [label]="'Overdue ' + s.daysOverdue + ' d'" />
+                        } @else {
+                          <span class="text-2">{{ s.dueAt ? (s.dueAt | shortDate) : '—' }}</span>
                         }
                       </td>
                     </tr>
@@ -184,56 +169,25 @@ import { SubmittalCreateDialogComponent } from './submittal-create-dialog.compon
                 </tbody>
               </table>
             </div>
-            <mat-paginator
-              [length]="r.totalCount"
-              [pageIndex]="r.page - 1"
-              [pageSize]="r.pageSize"
-              [pageSizeOptions]="[10, 20, 50]"
-              (page)="onPage($event)"
-              aria-label="Submittal pages"
-            />
+            @if (r.totalCount > r.pageSize) {
+              <app-pager
+                [page]="r.page"
+                [pageSize]="r.pageSize"
+                [total]="r.totalCount"
+                ariaLabel="Submittal pages"
+                (pageChange)="setPage($event)"
+              />
+            }
           }
         }
       </section>
     </div>
   `,
   styles: `
-    .queue {
-      margin-bottom: 16px;
-    }
-    .queue-list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-    .queue-list li {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-      padding: 10px 20px;
-      border-bottom: 1px solid var(--line);
-    }
-    .queue-list .title {
-      flex: 1 1 220px;
-    }
-    .filters {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      padding: 14px;
-      margin-bottom: 16px;
-    }
-    .filters mat-form-field {
-      width: 190px;
-    }
-    .block {
-      display: block;
-    }
-    @media (max-width: 700px) {
-      .filters mat-form-field {
-        width: 100%;
-      }
+    .doc {
+      font-family: var(--font-mono);
+      font-size: var(--fs-12);
+      color: var(--text-2);
     }
   `,
 })
@@ -243,17 +197,32 @@ export class SubmittalListPage {
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
   protected readonly label = label;
-  protected readonly tone = tone;
-  protected readonly statuses = SUBMITTAL_STATUSES;
-  protected readonly disciplines = DISCIPLINES;
+  protected readonly statusOptions: FilterOption[] = SUBMITTAL_STATUSES.map((v) => ({
+    value: v,
+    label: label(v),
+  }));
+  protected readonly disciplineOptions: FilterOption[] = DISCIPLINES.map((v) => ({
+    value: v,
+    label: label(v),
+  }));
+  protected readonly dueOptions: FilterOption[] = [
+    { value: 'overdue', label: 'Overdue' },
+    { value: 'week', label: 'Due in 7 days' },
+  ];
 
   protected readonly query = signal<SubmittalQuery>({ page: 1, pageSize: 20 });
   protected readonly result = signal<Paged<SubmittalListItem> | null>(null);
-  protected readonly queue = signal<ReviewQueueItem[]>([]);
   protected readonly members = signal<Member[]>([]);
-  protected readonly reviewers = computed(() =>
-    this.members().filter((m) => m.role === 'Reviewer'),
-  );
+  protected readonly reviewerOptions = computed<FilterOption[]>(() => [
+    { value: 'me', label: 'Me' },
+    ...this.members()
+      .filter((m) => m.role === 'Reviewer')
+      .map((m) => ({ value: m.userId, label: m.displayName })),
+  ]);
+  protected readonly activeFilters = computed(() => {
+    const q = this.query();
+    return [q.status, q.reviewer, q.due, q.discipline].filter((v) => !!v).length;
+  });
   protected readonly loading = signal(true);
   protected readonly error = signal('');
   protected readonly canCreate = computed(() => {
@@ -271,12 +240,8 @@ export class SubmittalListPage {
     });
     effect(() => {
       const id = this.session.project()?.id;
-      this.session.version();
       if (id) {
-        untracked(() => {
-          this.api.members(id).subscribe((m) => this.members.set(m));
-          this.api.reviewQueue(id, 'me').subscribe((q) => this.queue.set(q));
-        });
+        untracked(() => this.api.members(id).subscribe((m) => this.members.set(m)));
       }
     });
   }
@@ -304,8 +269,22 @@ export class SubmittalListPage {
     this.query.update((q) => ({ ...q, [key]: value, page: 1 }));
   }
 
-  protected onPage(e: PageEvent): void {
-    this.query.update((q) => ({ ...q, page: e.pageIndex + 1, pageSize: e.pageSize }));
+  protected setPage(page: number): void {
+    this.query.update((q) => ({ ...q, page }));
+  }
+
+  protected clear(): void {
+    this.query.set({ page: 1, pageSize: this.query().pageSize });
+  }
+
+  protected retry(): void {
+    this.query.update((q) => ({ ...q }));
+  }
+
+  protected open(id: string, event: MouseEvent): void {
+    if (!(event.target as HTMLElement).closest('a, button')) {
+      void this.router.navigate(['/app/submittals', id]);
+    }
   }
 
   protected create(): void {
@@ -313,13 +292,13 @@ export class SubmittalListPage {
     if (!project) {
       return;
     }
-    this.dialog
-      .open(SubmittalCreateDialogComponent, {
-        data: { projectId: project.id },
-        autoFocus: 'first-tabbable',
-      })
+    openDialog<SubmittalCreateDialogComponent, { projectId: string }, SubmittalDetail>(
+      this.dialog,
+      SubmittalCreateDialogComponent,
+      { projectId: project.id },
+    )
       .afterClosed()
-      .subscribe((s?: SubmittalDetail) => {
+      .subscribe((s) => {
         if (s) {
           void this.router.navigate(['/app/submittals', s.id]);
         }

@@ -8,11 +8,11 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
 import { ApiService } from '../../core/api.service';
 import { ExtractionResult, Revision, Suggestion } from '../../core/api.models';
 import { problemMessage } from '../../core/http';
 import { label } from '../../core/labels';
+import { IconComponent, StatusChipComponent } from '../../shared/ui';
 
 /**
  * Suggestions proposed from the revision's page text. Each cites its page and the rule that produced it; nothing
@@ -20,72 +20,80 @@ import { label } from '../../core/labels';
  */
 @Component({
   selector: 'app-extraction-panel',
-  imports: [MatButtonModule],
+  imports: [IconComponent, StatusChipComponent],
   template: `
-    <section class="panel" aria-labelledby="extract-title">
-      <div class="panel-header">
+    <section class="card" aria-labelledby="extract-title">
+      <div class="card-header">
         <h2 id="extract-title">Metadata suggestions</h2>
-        <span class="engine small" data-testid="engine-label">{{
+        <span class="engine" data-testid="engine-label">{{
           result()?.engineLabel ?? 'Rules-based extraction'
         }}</span>
       </div>
-      <div class="panel-pad">
+      <div class="card-body">
         @if (error()) {
-          <div class="error-box small" role="alert">{{ error() }}</div>
+          <div class="alert tone-danger" role="alert">
+            <app-icon name="triangle-alert" [size]="16" />
+            <p>{{ error() }}</p>
+          </div>
         }
         @if (result(); as r) {
           @if (r.status === 'NoTextLayer' || r.status === 'Unsupported') {
-            <p class="notice" role="note" data-testid="extraction-limitation">{{ r.message }}</p>
+            <div class="alert" role="note">
+              <app-icon name="scan-text" [size]="16" />
+              <p data-testid="extraction-limitation">{{ r.message }}</p>
+            </div>
           } @else {
-            <p class="small muted">{{ r.message }}</p>
+            <p class="intro">{{ r.message }}</p>
             @if (r.canRun) {
-              <button mat-flat-button (click)="run()" [disabled]="busy()">
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                (click)="run()"
+                [disabled]="busy()"
+              >
+                <app-icon name="scan-text" [size]="16" />
                 {{ busy() ? 'Extracting…' : 'Suggest metadata from ' + revision().versionLabel }}
               </button>
             } @else if (r.status === 'NotRun') {
-              <p class="small muted">
-                A document controller or project manager can run extraction.
-              </p>
+              <p class="intro">A document controller or project manager can run extraction.</p>
             }
             @if (r.suggestions.length > 0) {
               <ul class="suggestions">
                 @for (s of r.suggestions; track s.id) {
-                  <li [class]="s.status.toLowerCase()">
+                  <li [class.muted]="s.status === 'Rejected'">
                     <div class="head">
                       <span class="field">{{ fieldLabel(s.field) }}</span>
-                      <strong class="value">{{ display(s) }}</strong>
-                      <span
-                        [class]="'chip plain conf-' + s.confidence.toLowerCase()"
-                        [attr.title]="'Rule: ' + s.rule"
+                      <span class="conf" [attr.title]="'Rule: ' + s.rule"
+                        >{{ s.confidence }} confidence</span
                       >
-                        {{ s.confidence }}
-                      </span>
                     </div>
-                    <blockquote class="snippet">“{{ s.snippet }}”</blockquote>
-                    <div class="meta small">
-                      <button class="link" type="button" (click)="viewPage.emit(s.page)">
+                    <strong class="value">{{ display(s) }}</strong>
+                    <blockquote class="snippet">{{ s.snippet }}</blockquote>
+                    <div class="meta">
+                      <button class="link-btn" type="button" (click)="viewPage.emit(s.page)">
                         View on page {{ s.page }}
                       </button>
-                      <span class="muted">· {{ s.rule }}</span>
                       @if (s.currentValue !== null && s.status === 'Pending') {
-                        <span class="muted">· current: {{ s.currentValue || '—' }}</span>
+                        <span>· now {{ s.currentValue || '—' }}</span>
                       }
                     </div>
                     @if (s.status === 'Pending') {
                       @if (canDecide()) {
                         <div class="actions">
                           <button
-                            mat-stroked-button
+                            type="button"
+                            class="btn btn-secondary btn-sm"
                             (click)="decide(s, 'accept')"
                             [disabled]="busy()"
                             [attr.aria-label]="
                               'Accept ' + fieldLabel(s.field) + ' ' + s.proposedValue
                             "
                           >
-                            Accept
+                            <app-icon name="check" [size]="16" /> Accept
                           </button>
                           <button
-                            mat-button
+                            type="button"
+                            class="btn btn-ghost btn-sm"
                             (click)="decide(s, 'reject')"
                             [disabled]="busy()"
                             [attr.aria-label]="
@@ -97,7 +105,10 @@ import { label } from '../../core/labels';
                         </div>
                       }
                     } @else {
-                      <p class="small decided">{{ s.status }} by {{ s.decidedBy?.displayName }}</p>
+                      <p class="decided">
+                        <app-status [value]="s.status" />
+                        <span>by {{ s.decidedBy?.displayName }}</span>
+                      </p>
                     }
                   </li>
                 }
@@ -112,11 +123,13 @@ import { label } from '../../core/labels';
   `,
   styles: `
     .engine {
-      padding: 2px 8px;
-      border-radius: 4px;
-      background: var(--concrete-2);
-      color: var(--steel-2);
-      font-weight: 600;
+      color: var(--text-2);
+      font-size: var(--fs-12);
+    }
+    .intro {
+      margin: 0 0 12px;
+      color: var(--text-2);
+      font-size: var(--fs-13);
     }
     .suggestions {
       list-style: none;
@@ -124,76 +137,68 @@ import { label } from '../../core/labels';
       padding: 0;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
     }
     li {
-      border: 1px solid var(--line);
-      border-left: 4px solid var(--blueprint);
-      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
       padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
     }
-    li.accepted {
-      border-left-color: var(--success);
-      background: #f7fbf8;
-    }
-    li.rejected {
-      border-left-color: var(--line-strong);
-      opacity: 0.7;
+    li.muted {
+      opacity: 0.65;
     }
     .head {
       display: flex;
+      justify-content: space-between;
       gap: 8px;
-      align-items: baseline;
-      flex-wrap: wrap;
     }
-    .field {
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--muted);
+    .field,
+    .conf {
+      color: var(--text-2);
+      font-size: var(--fs-12);
     }
     .value {
+      font-weight: 600;
       overflow-wrap: anywhere;
-    }
-    .conf-high {
-      background: var(--success-soft);
-      color: var(--success);
-    }
-    .conf-medium {
-      background: var(--info-soft);
-      color: var(--info);
-    }
-    .conf-low {
-      background: var(--warn-soft);
-      color: var(--warn);
     }
     .snippet {
-      margin: 6px 0;
-      padding: 4px 10px;
-      border-left: 2px solid var(--line-strong);
+      margin: 2px 0;
+      padding: 6px 8px;
+      border-radius: 4px;
+      background: var(--surface-subtle);
       font-family: var(--font-mono);
-      font-size: 0.78rem;
-      color: var(--steel-2);
+      font-size: var(--fs-12);
+      color: var(--text-2);
       overflow-wrap: anywhere;
     }
-    .link {
-      border: 0;
-      background: none;
-      padding: 0;
-      color: var(--blueprint);
-      font: inherit;
-      font-weight: 600;
-      text-decoration: underline;
-      cursor: pointer;
+    .meta {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      color: var(--text-2);
+      font-size: var(--fs-12);
+    }
+    .meta .link-btn {
+      font-size: var(--fs-12);
     }
     .actions {
       display: flex;
-      gap: 8px;
-      margin-top: 6px;
+      gap: 6px;
+      margin-top: 4px;
     }
     .decided {
-      margin: 6px 0 0;
-      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 4px 0 0;
+      color: var(--text-2);
+      font-size: var(--fs-12);
+    }
+    .alert {
+      margin-bottom: 0;
     }
   `,
 })

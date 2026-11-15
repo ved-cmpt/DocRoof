@@ -1,124 +1,166 @@
-import { Component, input } from '@angular/core';
+import { Component, HostListener, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { GITHUB_URL } from './site';
+import { IconComponent, LogoComponent } from './ui';
 
-/** DocRoof mark: a roof chevron over a document with a revision tab. */
-@Component({
-  selector: 'app-logo',
-  template: `
-    <svg
-      [attr.width]="size()"
-      [attr.height]="size()"
-      viewBox="0 0 32 32"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <rect width="32" height="32" rx="7" fill="#1b2a3d" />
-      <path
-        d="M5 14 16 6l11 8"
-        fill="none"
-        stroke="#f5a524"
-        stroke-width="3"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
-      <path d="M10 14.5h12v11.5H10z" fill="#ffffff" />
-      <path
-        d="M12.5 18h7M12.5 21h7M12.5 24h4"
-        stroke="#1b2a3d"
-        stroke-width="1.4"
-        stroke-linecap="round"
-      />
-    </svg>
-  `,
-  styles: ':host { display: inline-flex; }',
-})
-export class LogoComponent {
-  readonly size = input(28);
-}
+export { LogoComponent } from './ui';
 
+/** Marketing header: transparent over the hero, white with a hairline once the page scrolls. */
 @Component({
   selector: 'app-public-header',
-  imports: [RouterLink, LogoComponent],
+  imports: [RouterLink, LogoComponent, IconComponent],
   template: `
     <a class="skip-link" href="#main">Skip to content</a>
-    <header class="public-header">
+    <header class="public-header" [class.scrolled]="scrolled() || menuOpen()">
       <div class="inner">
         <a routerLink="/" class="brand" aria-label="DocRoof home">
-          <app-logo [size]="30" />
-          <span>DocRoof</span>
+          <app-logo [size]="28" [wordmark]="true" />
         </a>
-        <nav aria-label="Primary">
-          <a routerLink="/" fragment="workflows">Workflows</a>
-          <a routerLink="/case-study">Case study</a>
-          <a routerLink="/login">Sign in</a>
-          <a routerLink="/demo" class="cta">Try the demo</a>
+        <nav aria-label="Primary" class="links" [class.open]="menuOpen()" id="public-nav">
+          <a routerLink="/" fragment="product" (click)="menuOpen.set(false)">Product</a>
+          <a routerLink="/" fragment="how" (click)="menuOpen.set(false)">How it works</a>
+          <a routerLink="/case-study" (click)="menuOpen.set(false)">Case study</a>
+          <a [href]="githubUrl" rel="noopener" target="_blank"
+            >GitHub <app-icon name="arrow-up-right" [size]="14"
+          /></a>
+          <a routerLink="/login" class="signin-mobile" (click)="menuOpen.set(false)">Sign in</a>
         </nav>
+        <div class="cta">
+          <a routerLink="/login" class="signin">Sign in</a>
+          <a routerLink="/demo" class="btn btn-primary">Try the demo</a>
+          <button
+            type="button"
+            class="btn btn-icon menu-toggle"
+            (click)="menuOpen.set(!menuOpen())"
+            [attr.aria-expanded]="menuOpen()"
+            aria-controls="public-nav"
+            aria-label="Menu"
+          >
+            <app-icon [name]="menuOpen() ? 'x' : 'menu'" />
+          </button>
+        </div>
       </div>
     </header>
   `,
   styles: `
+    :host {
+      display: block;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
     .public-header {
-      background: var(--ink);
-      color: #fff;
-      border-bottom: 4px solid transparent;
-      border-image: var(--hazard) 4;
+      border-bottom: 1px solid transparent;
+      transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease;
+    }
+    .public-header.scrolled {
+      background: color-mix(in srgb, var(--surface) 94%, transparent);
+      backdrop-filter: saturate(1.4) blur(10px);
+      border-bottom-color: var(--border);
     }
     .inner {
-      max-width: 1200px;
+      position: relative;
+      max-width: var(--marketing-max);
       margin: 0 auto;
-      padding: 12px 24px;
+      padding: 0 24px;
+      height: 64px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
+      gap: 24px;
     }
     .brand {
       display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      color: #fff;
-      text-decoration: none;
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 1.35rem;
-      letter-spacing: 0.01em;
+      border-radius: var(--r-sm);
     }
-    nav {
+    .brand:hover {
+      text-decoration: none;
+    }
+    .links {
       display: flex;
       align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
+      gap: 4px;
+      margin-left: auto;
     }
-    nav a {
-      color: #dbe3ec;
-      text-decoration: none;
-      padding: 8px 12px;
-      border-radius: 6px;
+    .links a,
+    .signin {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 10px;
+      border-radius: var(--r-sm);
+      color: var(--text-2);
       font-weight: 500;
     }
-    nav a:hover {
-      color: #fff;
-      background: rgb(255 255 255 / 8%);
+    .links a:hover,
+    .signin:hover {
+      color: var(--text);
+      background: var(--hover);
+      text-decoration: none;
     }
-    nav a.cta {
-      background: var(--amber);
-      color: var(--ink);
-      font-weight: 700;
+    .cta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    nav a.cta:hover {
-      background: #ffb93d;
+    .links .signin-mobile,
+    .menu-toggle {
+      display: none;
     }
-    @media (max-width: 560px) {
-      nav a:not(.cta) {
-        padding: 6px 8px;
-        font-size: 0.9rem;
+    @media (max-width: 860px) {
+      .inner {
+        padding: 0 16px;
+        gap: 8px;
+      }
+      .cta {
+        margin-left: auto;
+      }
+      .signin {
+        display: none;
+      }
+      .menu-toggle,
+      .links .signin-mobile {
+        display: inline-flex;
+      }
+      .links {
+        display: none;
+        position: absolute;
+        top: 64px;
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 2px;
+        padding: 8px 16px 16px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        box-shadow: var(--shadow-pop);
+      }
+      .links.open {
+        display: flex;
+      }
+      .links a {
+        padding: 12px 10px;
       }
     }
   `,
 })
-export class PublicHeaderComponent {}
+export class PublicHeaderComponent {
+  protected readonly githubUrl = GITHUB_URL;
+  protected readonly scrolled = signal(false);
+  protected readonly menuOpen = signal(false);
+
+  @HostListener('window:scroll')
+  protected onScroll(): void {
+    this.scrolled.set(window.scrollY > 8);
+  }
+
+  @HostListener('document:keydown.escape')
+  protected onEscape(): void {
+    this.menuOpen.set(false);
+  }
+}
 
 @Component({
   selector: 'app-public-footer',
@@ -126,81 +168,74 @@ export class PublicHeaderComponent {}
   template: `
     <footer class="public-footer">
       <div class="inner">
-        <div class="col brand-col">
-          <div class="brand"><app-logo [size]="26" /> <span>DocRoof</span></div>
-          <p>Every document, decision, and revision stays traceable.</p>
-          <p class="disclaimer">
-            Independent portfolio project. Not affiliated with, endorsed by, or a recreation of any
-            company's systems. All people, projects and documents are fictitious.
+        <div class="brand-col">
+          <app-logo [size]="24" [wordmark]="true" />
+          <p>
+            Independent portfolio project. Not affiliated with any company. All people, projects and
+            documents are fictitious.
           </p>
         </div>
-        <nav class="col" aria-label="Footer">
-          <h2>Explore</h2>
+        <nav aria-label="Footer" class="links">
           <a routerLink="/demo">Try the demo</a>
           <a routerLink="/case-study">Case study</a>
           <a routerLink="/login">Sign in</a>
           <a [href]="githubUrl" rel="noopener" target="_blank">Source on GitHub</a>
         </nav>
-        <div class="col">
-          <h2>Built with</h2>
-          <p>
-            Angular · TypeScript · ASP.NET Core (.NET 10) · EF Core · SQL Server 2022 · Playwright ·
-            xUnit
-          </p>
-          <p class="small">
-            MIT licensed source. Synthetic sample PDFs generated with PdfPig (Apache-2.0).
-          </p>
-        </div>
+        <p class="stack">
+          Angular · ASP.NET Core (.NET 10) · SQL Server 2022 · MIT licence · sample PDFs generated
+          with PdfPig
+        </p>
       </div>
     </footer>
   `,
   styles: `
     .public-footer {
-      background: var(--ink);
-      color: #c6d0db;
-      margin-top: 64px;
+      border-top: 1px solid var(--border);
+      background: var(--bg);
     }
     .inner {
-      max-width: 1200px;
+      max-width: var(--marketing-max);
       margin: 0 auto;
       padding: 40px 24px;
       display: grid;
-      grid-template-columns: 1.4fr 1fr 1fr;
-      gap: 32px;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+      gap: 24px 48px;
     }
-    .brand {
+    .brand-col p {
+      margin: 12px 0 0;
+      max-width: 46ch;
+      color: var(--text-2);
+      font-size: var(--fs-13);
+    }
+    .links {
       display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #fff;
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 1.2rem;
-      margin-bottom: 8px;
+      flex-wrap: wrap;
+      gap: 8px 24px;
+      justify-content: flex-end;
+      align-content: flex-start;
     }
-    h2 {
-      color: #fff;
-      font-size: 0.85rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
+    .links a {
+      color: var(--text-2);
+      font-weight: 500;
     }
-    nav {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+    .links a:hover {
+      color: var(--text);
     }
-    a {
-      color: #e7edf4;
+    .stack {
+      grid-column: 1 / -1;
+      margin: 0;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      color: var(--text-2);
+      font-size: var(--fs-12);
     }
-    .disclaimer {
-      font-size: 0.85rem;
-      color: #aab6c3;
-      border-left: 3px solid var(--amber);
-      padding-left: 10px;
-    }
-    @media (max-width: 800px) {
+    @media (max-width: 700px) {
       .inner {
         grid-template-columns: 1fr;
+        padding: 32px 16px;
+      }
+      .links {
+        justify-content: flex-start;
       }
     }
   `,

@@ -9,6 +9,6 @@ export const MEASURED_TESTS = {
   date: '2026-11-15',
   unit: 121,
   integration: 57,
-  angular: 23,
-  e2e: 9,
+  angular: 37,
+  e2e: 13,
 };

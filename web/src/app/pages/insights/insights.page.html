@@ -1,127 +1,159 @@
-<div class="page">
-  <div class="page-header">
-    <div>
-      <p class="eyebrow">{{ session.project()?.code }} · Live project metrics</p>
-      <h1>Insights</h1>
-      <p>
-        Computed from the database on every load
-        @if (view(); as v) {
-          (generated {{ v.raw.generatedAt | date: 'medium' }})
-        }
-        — nothing on this page is hard-coded.
-      </p>
-    </div>
-    <button mat-stroked-button (click)="load(session.project()?.id ?? null)">Refresh</button>
-  </div>
+<app-topbar title="Insights">
+  <button type="button" class="btn btn-secondary" (click)="reload()" aria-label="Refresh insights">
+    <app-icon name="refresh-cw" [size]="16" /><span class="btn-text">Refresh</span>
+  </button>
+</app-topbar>
 
+<div class="page">
   @if (error()) {
-    <div class="error-box" role="alert">{{ error() }}</div>
+    <section class="card">
+      <app-empty icon="triangle-alert" heading="Insights could not be loaded" [text]="error()">
+        <button type="button" class="btn btn-secondary" (click)="reload()">Try again</button>
+      </app-empty>
+    </section>
   } @else if (loading() && !view()) {
-    <div class="panel panel-pad stack" role="status" aria-label="Loading insights">
-      <span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span>
+    <div class="kpis" role="status" aria-label="Loading insights">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="card kpi">
+          <span class="skeleton" style="width: 60%"></span><span class="skeleton big"></span>
+        </div>
+      }
+    </div>
+    <div class="charts">
+      <div class="card chart wide"><span class="skeleton plot-skeleton"></span></div>
+      <div class="card chart"><span class="skeleton plot-skeleton"></span></div>
+      <div class="card chart"><span class="skeleton plot-skeleton"></span></div>
     </div>
   } @else if (view(); as v) {
+    <p class="generated">
+      Computed from the database on every load · {{ v.raw.generatedAt | longDate }}
+    </p>
+
     <section class="kpis" aria-label="Key figures">
       @for (k of v.kpis; track k.label) {
-        <div class="kpi panel">
+        <div class="card kpi">
           <span class="kpi-label">{{ k.label }}</span>
           <span class="kpi-value">{{ k.value }}</span>
-          <span class="kpi-note small muted">{{ k.note }}</span>
+          <span class="kpi-note">{{ k.note }}</span>
         </div>
       }
     </section>
 
     <div class="charts">
-      <figure class="panel chart wide">
-        <figcaption>
+      <!-- RFIs opened vs closed -->
+      <figure class="card chart wide">
+        <figcaption class="chart-head">
           <h2>RFIs opened vs closed per week</h2>
-          <span class="legend small">
-            <span class="sw" style="background: #1b2a3d"></span> Opened
-            <span class="sw" style="background: #f5a524; outline: 1px solid #8a4b00"></span> Closed
-            <span class="sw line"></span> Open at week end
+          <span class="legend" aria-hidden="true">
+            <span><i class="sw brand"></i>Opened</span>
+            <span><i class="sw grey"></i>Closed</span>
+            <span><i class="sw line"></i>Open at week end</span>
           </span>
+          <button
+            type="button"
+            class="btn btn-ghost btn-sm"
+            (click)="toggle('weeks')"
+            [attr.aria-pressed]="!!tables().weeks"
+          >
+            {{ tables().weeks ? 'Show chart' : 'Show table' }}
+          </button>
         </figcaption>
-        <svg viewBox="0 0 660 220" role="img" aria-labelledby="wk-desc" class="svg">
-          <desc id="wk-desc">
-            Grouped bars for RFIs opened and closed in each of the last {{ v.weeks.length }} weeks,
-            with a line for RFIs still open at the end of each week. The data table below lists the
-            same values.
-          </desc>
-          <line x1="40" y1="180" x2="640" y2="180" stroke="#b4bec9" />
-          <text x="34" y="184" text-anchor="end" font-size="10" fill="#536274">0</text>
-          <text x="34" y="34" text-anchor="end" font-size="10" fill="#536274">{{ v.weekMax }}</text>
-          <line x1="40" y1="30" x2="640" y2="30" stroke="#e7e9e6" stroke-dasharray="3 3" />
-          @for (w of v.weeks; track w.label; let i = $index) {
-            <rect
-              [attr.x]="40 + i * step(v) + step(v) * 0.15"
-              [attr.y]="180 - barHeight(w.opened, v.weekMax)"
-              [attr.width]="step(v) * 0.32"
-              [attr.height]="barHeight(w.opened, v.weekMax)"
-              fill="#1b2a3d"
-            />
-            <rect
-              [attr.x]="40 + i * step(v) + step(v) * 0.5"
-              [attr.y]="180 - barHeight(w.closed, v.weekMax)"
-              [attr.width]="step(v) * 0.32"
-              [attr.height]="barHeight(w.closed, v.weekMax)"
-              fill="#f5a524"
-              stroke="#8a4b00"
-              stroke-width="0.5"
-            />
-            @if (i % 2 === 0) {
-              <text
-                [attr.x]="40 + i * step(v) + step(v) / 2"
-                y="198"
-                text-anchor="middle"
-                font-size="10"
-                fill="#536274"
+        @if (!tables().weeks) {
+          <div
+            class="wk"
+            role="img"
+            [attr.aria-label]="
+              'Grouped bars for RFIs opened and closed in each of the last ' +
+              v.weeks.length +
+              ' weeks, with a line for RFIs still open at week end. Use Show table for the values.'
+            "
+          >
+            <div class="wk-plot">
+              <div class="wk-grid" aria-hidden="true">
+                <span
+                  ><em>{{ scale(v) }}</em></span
+                >
+                <span
+                  ><em>{{ scale(v) / 2 }}</em></span
+                >
+                <span><em>0</em></span>
+              </div>
+              <div class="wk-cols">
+                @for (w of v.weeks; track w.label) {
+                  <div class="wk-col">
+                    <span class="bar brand" [style.height.%]="pct(w.opened, scale(v))"></span>
+                    <span class="bar grey" [style.height.%]="pct(w.closed, scale(v))"></span>
+                  </div>
+                }
+              </div>
+              <svg
+                class="wk-line"
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                aria-hidden="true"
               >
-                {{ w.label }}
-              </text>
-            }
-          }
-          <polyline [attr.points]="linePoints(v)" fill="none" stroke="#1f5fbf" stroke-width="2.5" />
-          @for (w of v.weeks; track w.label; let i = $index) {
-            <circle
-              [attr.cx]="40 + i * step(v) + step(v) / 2"
-              [attr.cy]="180 - barHeight(w.openAtEnd, v.weekMax)"
-              r="3.5"
-              fill="#fff"
-              stroke="#1f5fbf"
-              stroke-width="2"
-            />
-          }
-        </svg>
-        <details>
-          <summary>Data table</summary>
-          <table class="data-table compact">
-            <thead>
-              <tr>
-                <th scope="col">Week of</th>
-                <th scope="col">Opened</th>
-                <th scope="col">Closed</th>
-                <th scope="col">Open at end</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (w of v.weeks; track w.label) {
-                <tr>
-                  <th scope="row">{{ w.label }}</th>
-                  <td>{{ w.opened }}</td>
-                  <td>{{ w.closed }}</td>
-                  <td>{{ w.openAtEnd }}</td>
-                </tr>
+                <polyline [attr.points]="linePoints(v)" vector-effect="non-scaling-stroke" />
+              </svg>
+              @for (w of v.weeks; track w.label; let i = $index) {
+                <span
+                  class="dot"
+                  aria-hidden="true"
+                  [style.left.%]="dotLeft(i, v)"
+                  [style.bottom.%]="pct(w.openAtEnd, scale(v))"
+                ></span>
               }
-            </tbody>
-          </table>
-        </details>
+            </div>
+            <div class="wk-labels" aria-hidden="true">
+              @for (w of v.weeks; track w.label; let i = $index) {
+                <span>{{ i % 2 === 0 ? w.label : '' }}</span>
+              }
+            </div>
+          </div>
+        } @else {
+          <div class="table-wrap data">
+            <table class="table table-compact">
+              <caption class="visually-hidden">
+                RFIs opened and closed per week
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Week of</th>
+                  <th scope="col" class="num-cell">Opened</th>
+                  <th scope="col" class="num-cell">Closed</th>
+                  <th scope="col" class="num-cell">Open at end</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (w of v.weeks; track w.label) {
+                  <tr>
+                    <th scope="row">{{ w.label }}</th>
+                    <td class="num-cell">{{ w.opened }}</td>
+                    <td class="num-cell">{{ w.closed }}</td>
+                    <td class="num-cell">{{ w.openAtEnd }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
       </figure>
 
-      <figure class="panel chart">
-        <figcaption><h2>Overdue reviews by discipline</h2></figcaption>
+      <!-- Overdue by discipline -->
+      <figure class="card chart">
+        <figcaption class="chart-head">
+          <h2>Overdue reviews by discipline</h2>
+          <button
+            type="button"
+            class="btn btn-ghost btn-sm"
+            (click)="toggle('overdue')"
+            [attr.aria-pressed]="!!tables().overdue"
+          >
+            {{ tables().overdue ? 'Show chart' : 'Show table' }}
+          </button>
+        </figcaption>
         @if (v.overdueByDiscipline.length === 0) {
-          <p class="muted">No overdue reviews.</p>
-        } @else {
+          <p class="none">Nothing is overdue.</p>
+        } @else if (!tables().overdue) {
           <ul class="hbars" aria-label="Overdue items by discipline">
             @for (b of v.overdueByDiscipline; track b.label) {
               <li>
@@ -133,92 +165,189 @@
               </li>
             }
           </ul>
+        } @else {
+          <ng-container
+            *ngTemplateOutlet="
+              barTable;
+              context: {
+                $implicit: v.overdueByDiscipline,
+                title: 'Overdue items by discipline',
+                col: 'Discipline',
+              }
+            "
+          />
         }
       </figure>
 
-      <figure class="panel chart">
-        <figcaption>
-          <h2>Document volume by discipline and status</h2>
-          <span class="legend small">
+      <!-- Documents by discipline and status -->
+      <figure class="card chart">
+        <figcaption class="chart-head">
+          <h2>Documents by discipline</h2>
+          <button
+            type="button"
+            class="btn btn-ghost btn-sm"
+            (click)="toggle('documents')"
+            [attr.aria-pressed]="!!tables().documents"
+          >
+            {{ tables().documents ? 'Show chart' : 'Show table' }}
+          </button>
+        </figcaption>
+        @if (!tables().documents) {
+          <span class="legend under" aria-hidden="true">
             @for (s of v.documentStatuses; track s) {
-              <span class="sw" [style.background]="color(s)"></span> {{ label(s) }}
+              <span><i class="sw" [style.background]="fill(s)"></i>{{ label(s) }}</span>
             }
           </span>
-        </figcaption>
-        <ul class="hbars" aria-label="Documents by discipline, split by status">
-          @for (d of v.documents; track d.label) {
-            <li>
-              <span class="hb-label">{{ d.label }}</span>
-              <span class="hb-track">
-                @for (seg of d.segments; track seg.key) {
-                  @if (seg.value > 0) {
-                    <span
-                      class="hb-bar seg"
-                      [style.width.%]="seg.percent"
-                      [style.background]="color(seg.key)"
-                      [attr.title]="label(seg.key) + ': ' + seg.value"
-                    ></span>
-                  }
-                }
-              </span>
-              <span class="hb-value">{{ d.total }}</span>
-            </li>
-          }
-        </ul>
-        <details>
-          <summary>Data table</summary>
-          <table class="data-table compact">
-            <thead>
-              <tr>
-                <th scope="col">Discipline</th>
-                @for (s of v.documentStatuses; track s) {
-                  <th scope="col">{{ label(s) }}</th>
-                }
-                <th scope="col">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (d of v.documents; track d.label) {
-                <tr>
-                  <th scope="row">{{ d.label }}</th>
+          <ul class="hbars" aria-label="Documents by discipline, split by status">
+            @for (d of v.documents; track d.label) {
+              <li>
+                <span class="hb-label">{{ d.label }}</span>
+                <span class="hb-track stacked">
                   @for (seg of d.segments; track seg.key) {
-                    <td>{{ seg.value }}</td>
+                    @if (seg.value > 0) {
+                      <span
+                        class="hb-bar seg"
+                        [style.width.%]="seg.percent"
+                        [style.background]="fill(seg.key)"
+                        [attr.title]="label(seg.key) + ': ' + seg.value"
+                      ></span>
+                    }
                   }
-                  <td>{{ d.total }}</td>
+                </span>
+                <span class="hb-value">{{ d.total }}</span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="table-wrap data">
+            <table class="table table-compact">
+              <caption class="visually-hidden">
+                Documents by discipline and status
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Discipline</th>
+                  @for (s of v.documentStatuses; track s) {
+                    <th scope="col" class="num-cell">{{ label(s) }}</th>
+                  }
+                  <th scope="col" class="num-cell">Total</th>
                 </tr>
+              </thead>
+              <tbody>
+                @for (d of v.documents; track d.label) {
+                  <tr>
+                    <th scope="row">{{ d.label }}</th>
+                    @for (seg of d.segments; track seg.key) {
+                      <td class="num-cell">{{ seg.value }}</td>
+                    }
+                    <td class="num-cell">{{ d.total }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </figure>
+
+      <!-- RFIs by state -->
+      <figure class="card chart">
+        <figcaption class="chart-head">
+          <h2>RFIs by state</h2>
+          <button
+            type="button"
+            class="btn btn-ghost btn-sm"
+            (click)="toggle('rfis')"
+            [attr.aria-pressed]="!!tables().rfis"
+          >
+            {{ tables().rfis ? 'Show chart' : 'Show table' }}
+          </button>
+        </figcaption>
+        @if (!tables().rfis) {
+          <ul class="hbars" aria-label="RFIs by state">
+            @for (b of v.rfisByState; track b.label) {
+              <li>
+                <span class="hb-label">{{ b.label }}</span>
+                <span class="hb-track"
+                  ><span class="hb-bar" [style.width.%]="b.percent"></span
+                ></span>
+                <span class="hb-value">{{ b.value }}</span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <ng-container
+            *ngTemplateOutlet="
+              barTable;
+              context: { $implicit: v.rfisByState, title: 'RFIs by state', col: 'State' }
+            "
+          />
+        }
+      </figure>
+
+      <!-- Submittals by status -->
+      <figure class="card chart">
+        <figcaption class="chart-head">
+          <h2>Submittals by status</h2>
+          <button
+            type="button"
+            class="btn btn-ghost btn-sm"
+            (click)="toggle('submittals')"
+            [attr.aria-pressed]="!!tables().submittals"
+          >
+            {{ tables().submittals ? 'Show chart' : 'Show table' }}
+          </button>
+        </figcaption>
+        @if (!tables().submittals) {
+          <ul class="hbars" aria-label="Submittals by status">
+            @for (b of v.submittalsByStatus; track b.label) {
+              <li>
+                <span class="hb-label">{{ b.label }}</span>
+                <span class="hb-track"
+                  ><span class="hb-bar" [style.width.%]="b.percent"></span
+                ></span>
+                <span class="hb-value">{{ b.value }}</span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <ng-container
+            *ngTemplateOutlet="
+              barTable;
+              context: {
+                $implicit: v.submittalsByStatus,
+                title: 'Submittals by status',
+                col: 'Status',
               }
-            </tbody>
-          </table>
-        </details>
-      </figure>
-
-      <figure class="panel chart">
-        <figcaption><h2>RFIs by state</h2></figcaption>
-        <ul class="hbars" aria-label="RFIs by state">
-          @for (b of v.rfisByState; track b.label) {
-            <li>
-              <span class="hb-label">{{ b.label }}</span>
-              <span class="hb-track"><span class="hb-bar" [style.width.%]="b.percent"></span></span>
-              <span class="hb-value">{{ b.value }}</span>
-            </li>
-          }
-        </ul>
-      </figure>
-
-      <figure class="panel chart">
-        <figcaption><h2>Submittals by status</h2></figcaption>
-        <ul class="hbars" aria-label="Submittals by status">
-          @for (b of v.submittalsByStatus; track b.label) {
-            <li>
-              <span class="hb-label">{{ b.label }}</span>
-              <span class="hb-track"
-                ><span class="hb-bar blue" [style.width.%]="b.percent"></span
-              ></span>
-              <span class="hb-value">{{ b.value }}</span>
-            </li>
-          }
-        </ul>
+            "
+          />
+        }
       </figure>
     </div>
   }
 </div>
+
+<ng-template #barTable let-rows let-title="title" let-col="col">
+  <div class="table-wrap data">
+    <table class="table table-compact">
+      <caption class="visually-hidden">
+        {{
+          title
+        }}
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">{{ col }}</th>
+          <th scope="col" class="num-cell">Count</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (b of rows; track b.label) {
+          <tr>
+            <th scope="row">{{ b.label }}</th>
+            <td class="num-cell">{{ b.value }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</ng-template>

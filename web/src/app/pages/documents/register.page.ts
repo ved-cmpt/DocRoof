@@ -1,11 +1,5 @@
-import { DatePipe } from '@angular/common';
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatDialog } from '@angular/material/dialog';
-import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ApiService } from '../../core/api.service';
@@ -19,21 +13,40 @@ import {
   Paged,
 } from '../../core/api.models';
 import { problemMessage } from '../../core/http';
-import { label, tone } from '../../core/labels';
+import { label } from '../../core/labels';
 import { SessionService } from '../../core/session.service';
 import { ToastService } from '../../core/toast.service';
+import { TopbarComponent } from '../../layout/topbar.component';
+import { openDialog } from '../../shared/dialog';
+import {
+  EmptyStateComponent,
+  FilterChipComponent,
+  FilterOption,
+  IconComponent,
+  PagerComponent,
+  ShortDatePipe,
+  SkeletonRowsComponent,
+  StatusChipComponent,
+} from '../../shared/ui';
+import { MatDialog } from '@angular/material/dialog';
 import { UploadDialogComponent, UploadDialogData } from './upload-dialog.component';
+
+const opts = (values: readonly string[]): FilterOption[] =>
+  values.map((v) => ({ value: v, label: label(v) }));
 
 @Component({
   selector: 'app-document-register',
   imports: [
     FormsModule,
     RouterLink,
-    DatePipe,
-    MatButtonModule,
-    MatInputModule,
-    MatSelectModule,
-    MatPaginatorModule,
+    TopbarComponent,
+    IconComponent,
+    FilterChipComponent,
+    PagerComponent,
+    StatusChipComponent,
+    SkeletonRowsComponent,
+    EmptyStateComponent,
+    ShortDatePipe,
   ],
   templateUrl: './register.page.html',
   styleUrl: './register.page.scss',
@@ -46,16 +59,24 @@ export class DocumentRegisterPage {
   private readonly router = inject(Router);
 
   protected readonly label = label;
-  protected readonly tone = tone;
-  protected readonly disciplines = DISCIPLINES;
-  protected readonly categories = CATEGORIES;
-  protected readonly statuses = DOCUMENT_STATUSES;
-  protected readonly approvals = [
+  protected readonly disciplineOptions = opts(DISCIPLINES);
+  protected readonly statusOptions = opts(DOCUMENT_STATUSES);
+  protected readonly categoryOptions = opts(CATEGORIES);
+  protected readonly approvalOptions = opts([
     'NotReviewed',
     'Pending',
     'Approved',
     'ApprovedWithComments',
     'ReviseAndResubmit',
+  ]);
+  protected readonly revisionOptions = ['R0', 'R1', 'R2', 'R3'].map((v) => ({
+    value: v,
+    label: v,
+  }));
+  protected readonly sortOptions: FilterOption[] = [
+    { value: 'number', label: 'Number A–Z' },
+    { value: '-number', label: 'Number Z–A' },
+    { value: 'title', label: 'Title A–Z' },
   ];
 
   protected readonly query = signal<DocumentQuery>({ page: 1, pageSize: 20, sort: '-updated' });
@@ -66,23 +87,27 @@ export class DocumentRegisterPage {
     const role = this.session.role();
     return role === 'DocumentController' || role === 'ProjectManager';
   });
-  protected readonly hasFilters = computed(() => {
+  protected readonly activeFilters = computed(() => {
     const q = this.query();
-    return !!(q.search || q.discipline || q.status || q.category || q.approvalStatus || q.revision);
+    return [q.search, q.discipline, q.status, q.category, q.approvalStatus, q.revision].filter(
+      (v) => !!v,
+    ).length;
   });
 
   private searchTimer: ReturnType<typeof setTimeout> | undefined;
   private sub?: Subscription;
 
-  /** Optional ?search= deep link (used by the guided task). */
+  /** Optional ?search= deep link (global search and the guided tour). */
   readonly search = input<string | undefined>();
 
   constructor() {
     effect(() => {
       const s = this.search();
-      if (s) {
-        untracked(() => this.query.update((q) => ({ ...q, search: s, page: 1 })));
-      }
+      untracked(() => {
+        if (s !== undefined && s !== this.query().search) {
+          this.query.update((q) => ({ ...q, search: s, page: 1 }));
+        }
+      });
     });
     effect(() => {
       const project = this.session.project();
@@ -128,14 +153,18 @@ export class DocumentRegisterPage {
 
   protected clearFilters(): void {
     this.query.set({ page: 1, pageSize: this.query().pageSize, sort: this.query().sort });
-  }
-
-  protected onPage(e: PageEvent): void {
-    this.query.update((q) => ({ ...q, page: e.pageIndex + 1, pageSize: e.pageSize }));
+    void this.router.navigate([], { queryParams: { search: null }, replaceUrl: true });
   }
 
   protected retry(): void {
     this.query.update((q) => ({ ...q }));
+  }
+
+  protected open(d: DocumentListItem, event: MouseEvent): void {
+    if ((event.target as HTMLElement).closest('a, button')) {
+      return;
+    }
+    void this.router.navigate(['/app/documents', d.id]);
   }
 
   protected newDocument(): void {
@@ -148,10 +177,13 @@ export class DocumentRegisterPage {
       projectId: project.id,
       suggestedLabel: 'R0',
     };
-    this.dialog
-      .open(UploadDialogComponent, { data, autoFocus: 'first-tabbable' })
+    openDialog<UploadDialogComponent, UploadDialogData, DocumentDetail>(
+      this.dialog,
+      UploadDialogComponent,
+      data,
+    )
       .afterClosed()
-      .subscribe((created?: DocumentDetail) => {
+      .subscribe((created) => {
         if (created) {
           this.toast.success(
             `${created.documentNumber} created with revision ${created.revisions[0]?.versionLabel}.`,

@@ -1,13 +1,10 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { ApiService } from '../../core/api.service';
 import { DocumentListItem, Revision, RfiDetail } from '../../core/api.models';
 import { problemMessage } from '../../core/http';
+import { IconComponent } from '../../shared/ui';
 
 export interface RfiCreateData {
   projectId: string;
@@ -19,106 +16,121 @@ export interface RfiCreateData {
 
 @Component({
   selector: 'app-rfi-create-dialog',
-  imports: [
-    ReactiveFormsModule,
-    MatDialogModule,
-    MatButtonModule,
-    MatInputModule,
-    MatSelectModule,
-    MatCheckboxModule,
-  ],
+  imports: [ReactiveFormsModule, MatDialogModule, IconComponent],
   template: `
-    <h2 mat-dialog-title>New RFI</h2>
-    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      <mat-dialog-content class="fields">
-        <p class="small muted">
-          An RFI cites one exact document revision and page. The citation stays pinned to that
-          revision even after newer revisions are issued.
-        </p>
-        <div class="pair">
-          <mat-form-field appearance="outline">
-            <mat-label>Document</mat-label>
-            <mat-select
-              formControlName="documentId"
-              (selectionChange)="loadRevisions($event.value)"
-              required
-            >
-              @for (d of documents(); track d.id) {
-                <mat-option [value]="d.id">{{ d.documentNumber }} · {{ d.title }}</mat-option>
-              }
-            </mat-select>
-            <mat-error>Choose the document you are asking about.</mat-error>
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Revision</mat-label>
-            <mat-select formControlName="revisionId" required>
-              @for (r of revisions(); track r.id) {
-                <mat-option [value]="r.id"
-                  >{{ r.versionLabel }}{{ r.isCurrent ? ' (current)' : ' (superseded)' }} ·
-                  {{ r.pageCount ?? 1 }} p.</mat-option
-                >
-              }
-            </mat-select>
-            <mat-error>Choose a revision.</mat-error>
-          </mat-form-field>
+    <form class="dlg" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <header class="dlg-head">
+        <div>
+          <h2 mat-dialog-title>New RFI</h2>
+          <p>The RFI stays pinned to the revision and page you cite.</p>
         </div>
-        <mat-form-field appearance="outline" class="page">
-          <mat-label>Page</mat-label>
-          <input matInput type="number" formControlName="page" min="1" [max]="maxPage()" required />
-          <mat-hint>1 – {{ maxPage() }}</mat-hint>
-          <mat-error>Enter a page between 1 and {{ maxPage() }}.</mat-error>
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Subject</mat-label>
-          <input matInput formControlName="subject" maxlength="300" required />
-          <mat-error>Subject is required (5–300 characters).</mat-error>
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Question</mat-label>
+        <button type="button" class="btn btn-icon" mat-dialog-close aria-label="Close">
+          <app-icon name="x" />
+        </button>
+      </header>
+
+      <div class="dlg-body form-grid">
+        <div class="field">
+          <label class="field-label" for="rfi-doc">Document</label>
+          <select
+            id="rfi-doc"
+            class="select"
+            formControlName="documentId"
+            (change)="loadRevisions(form.controls.documentId.value)"
+          >
+            <option value="" disabled>Choose a document…</option>
+            @for (d of documents(); track d.id) {
+              <option [value]="d.id">{{ d.documentNumber }} · {{ d.title }}</option>
+            }
+          </select>
+          @if (invalid('documentId')) {
+            <p class="field-error">Choose the document you are asking about.</p>
+          }
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label class="field-label" for="rfi-rev">Revision</label>
+            <select id="rfi-rev" class="select" formControlName="revisionId">
+              @if (revisions().length === 0) {
+                <option value="" disabled>Choose a document first</option>
+              }
+              @for (r of revisions(); track r.id) {
+                <option [value]="r.id">
+                  {{ r.versionLabel }}{{ r.isCurrent ? ' (current)' : ' (superseded)' }} ·
+                  {{ r.pageCount ?? 1 }} p.
+                </option>
+              }
+            </select>
+            @if (invalid('revisionId')) {
+              <p class="field-error">Choose a revision.</p>
+            }
+          </div>
+          <div class="field">
+            <label class="field-label" for="rfi-page">Page</label>
+            <input
+              id="rfi-page"
+              class="input"
+              type="number"
+              formControlName="page"
+              min="1"
+              [max]="maxPage()"
+            />
+            @if (invalid('page')) {
+              <p class="field-error">Enter a page between 1 and {{ maxPage() }}.</p>
+            } @else {
+              <span class="field-hint">1 – {{ maxPage() }}</span>
+            }
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="rfi-subject">Subject</label>
+          <input
+            id="rfi-subject"
+            class="input"
+            formControlName="subject"
+            maxlength="300"
+            autocomplete="off"
+          />
+          @if (invalid('subject')) {
+            <p class="field-error">Subject is required (5–300 characters).</p>
+          }
+        </div>
+        <div class="field">
+          <label class="field-label" for="rfi-question">Question</label>
           <textarea
-            matInput
+            id="rfi-question"
+            class="textarea"
             formControlName="question"
             rows="4"
             maxlength="4000"
-            required
           ></textarea>
-          <mat-error>Describe the question (at least 10 characters).</mat-error>
-        </mat-form-field>
-        <mat-checkbox formControlName="submit"
-          >Submit now (otherwise save as a private draft)</mat-checkbox
-        >
+          @if (invalid('question')) {
+            <p class="field-error">Describe the question (at least 10 characters).</p>
+          } @else {
+            <span class="field-hint"
+              >Quote the clause or detail so the reviewer can answer fast.</span
+            >
+          }
+        </div>
+        <label class="check">
+          <input type="checkbox" formControlName="submit" />
+          Submit now (otherwise save a private draft)
+        </label>
         @if (error()) {
-          <div class="error-box" role="alert">{{ error() }}</div>
+          <div class="alert tone-danger" role="alert">
+            <app-icon name="triangle-alert" [size]="16" />
+            <p>{{ error() }}</p>
+          </div>
         }
-      </mat-dialog-content>
-      <mat-dialog-actions align="end">
-        <button mat-button type="button" mat-dialog-close>Cancel</button>
-        <button mat-flat-button type="submit" [disabled]="busy()">
+      </div>
+
+      <footer class="dlg-foot">
+        <button type="button" class="btn btn-secondary" mat-dialog-close>Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="busy()">
           {{ busy() ? 'Saving…' : form.value.submit ? 'Create and submit' : 'Save draft' }}
         </button>
-      </mat-dialog-actions>
+      </footer>
     </form>
-  `,
-  styles: `
-    .fields {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      min-width: min(620px, 80vw);
-    }
-    .pair {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    .page {
-      width: 160px;
-    }
-    @media (max-width: 600px) {
-      .pair {
-        grid-template-columns: 1fr;
-      }
-    }
   `,
 })
 export class RfiCreateDialogComponent implements OnInit {
@@ -152,7 +164,15 @@ export class RfiCreateDialogComponent implements OnInit {
     this.form.controls.revisionId.valueChanges.subscribe((id) => this.updateMaxPage(id));
   }
 
+  protected invalid(name: keyof typeof this.form.controls): boolean {
+    const c = this.form.controls[name];
+    return c.invalid && (c.touched || c.dirty);
+  }
+
   protected loadRevisions(documentId: string, preselect?: string): void {
+    if (!documentId) {
+      return;
+    }
     this.api.document(documentId).subscribe((d) => {
       this.revisions.set(d.revisions);
       const id = preselect ?? d.currentRevisionId ?? d.revisions[0]?.id ?? '';

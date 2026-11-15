@@ -1,123 +1,110 @@
+<app-topbar title="Document register">
+  @if (canUpload()) {
+    <button
+      type="button"
+      class="btn btn-primary"
+      (click)="newDocument()"
+      aria-label="Upload document"
+    >
+      <app-icon name="upload" [size]="16" /> <span class="btn-text">Upload document</span>
+    </button>
+  }
+</app-topbar>
+
 <div class="page">
-  <div class="page-header">
-    <div>
-      <p class="eyebrow">{{ session.project()?.code }} · Controlled documents</p>
-      <h1>Document register</h1>
-      <p>
-        Current revisions are highlighted; superseded revisions stay available for traceability.
-      </p>
-    </div>
-    @if (canUpload()) {
-      <button mat-flat-button (click)="newDocument()">New document</button>
-    }
-  </div>
-
-  <section class="panel filters" aria-label="Filters">
-    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search">
-      <mat-label>Search number or title</mat-label>
-      <input
-        matInput
-        type="search"
-        [ngModel]="query().search ?? ''"
-        (ngModelChange)="onSearch($event)"
-      />
-    </mat-form-field>
-    <mat-form-field appearance="outline" subscriptSizing="dynamic">
-      <mat-label>Discipline</mat-label>
-      <mat-select
-        [value]="query().discipline ?? ''"
-        (selectionChange)="set('discipline', $event.value)"
-      >
-        <mat-option value="">All disciplines</mat-option>
-        @for (d of disciplines; track d) {
-          <mat-option [value]="d">{{ label(d) }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-    <mat-form-field appearance="outline" subscriptSizing="dynamic">
-      <mat-label>Status</mat-label>
-      <mat-select [value]="query().status ?? ''" (selectionChange)="set('status', $event.value)">
-        <mat-option value="">All statuses</mat-option>
-        @for (s of statuses; track s) {
-          <mat-option [value]="s">{{ label(s) }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-    <mat-form-field appearance="outline" subscriptSizing="dynamic">
-      <mat-label>Category</mat-label>
-      <mat-select
-        [value]="query().category ?? ''"
-        (selectionChange)="set('category', $event.value)"
-      >
-        <mat-option value="">All categories</mat-option>
-        @for (c of categories; track c) {
-          <mat-option [value]="c">{{ label(c) }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-    <mat-form-field appearance="outline" subscriptSizing="dynamic">
-      <mat-label>Review status</mat-label>
-      <mat-select
-        [value]="query().approvalStatus ?? ''"
-        (selectionChange)="set('approvalStatus', $event.value)"
-      >
-        <mat-option value="">Any review status</mat-option>
-        @for (a of approvals; track a) {
-          <mat-option [value]="a">{{ label(a) }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="narrow">
-      <mat-label>Has revision</mat-label>
-      <input
-        matInput
-        [ngModel]="query().revision ?? ''"
-        (change)="set('revision', $any($event.target).value)"
-        placeholder="R1"
-      />
-    </mat-form-field>
-    <mat-form-field appearance="outline" subscriptSizing="dynamic">
-      <mat-label>Sort</mat-label>
-      <mat-select [value]="query().sort" (selectionChange)="set('sort', $event.value)">
-        <mat-option value="-updated">Recently updated</mat-option>
-        <mat-option value="number">Number A–Z</mat-option>
-        <mat-option value="-number">Number Z–A</mat-option>
-        <mat-option value="title">Title A–Z</mat-option>
-      </mat-select>
-    </mat-form-field>
-    @if (hasFilters()) {
-      <button mat-button (click)="clearFilters()">Clear filters</button>
-    }
-  </section>
-
-  <section class="panel" aria-labelledby="results-title" [attr.aria-busy]="loading()">
+  <section class="card" aria-labelledby="results-title" [attr.aria-busy]="loading()">
     <h2 id="results-title" class="visually-hidden">Documents</h2>
-    @if (error()) {
-      <div class="panel-pad">
-        <div class="error-box" role="alert">{{ error() }}</div>
-        <button mat-button (click)="retry()">Retry</button>
+    <div class="toolbar" role="toolbar" aria-label="Filters">
+      <div class="search-box">
+        <app-icon name="search" [size]="16" />
+        <input
+          class="input input-sm"
+          type="search"
+          placeholder="Search number or title"
+          aria-label="Search number or title"
+          [ngModel]="query().search ?? ''"
+          (ngModelChange)="onSearch($event)"
+        />
       </div>
-    } @else if (loading() && !result()) {
-      <div class="panel-pad stack" role="status" aria-label="Loading documents">
-        @for (i of [1, 2, 3, 4, 5]; track i) {
-          <span class="skeleton"></span>
+      <app-filter-chip
+        label="Discipline"
+        [options]="disciplineOptions"
+        [value]="query().discipline"
+        (valueChange)="set('discipline', $any($event))"
+      />
+      <app-filter-chip
+        label="Status"
+        [options]="statusOptions"
+        [value]="query().status"
+        (valueChange)="set('status', $any($event))"
+      />
+      <app-filter-chip
+        label="Category"
+        [options]="categoryOptions"
+        [value]="query().category"
+        (valueChange)="set('category', $any($event))"
+      />
+      <app-filter-chip
+        label="Review"
+        [options]="approvalOptions"
+        [value]="query().approvalStatus"
+        (valueChange)="set('approvalStatus', $any($event))"
+      />
+      <app-filter-chip
+        label="Revision"
+        [options]="revisionOptions"
+        [value]="query().revision"
+        allLabel="Any"
+        (valueChange)="set('revision', $event)"
+      />
+      @if (activeFilters() > 0) {
+        <button type="button" class="btn btn-ghost btn-sm" (click)="clearFilters()">
+          Clear
+          <span class="filter-badge" [attr.aria-label]="activeFilters() + ' active'">{{
+            activeFilters()
+          }}</span>
+        </button>
+      }
+      <span class="count">
+        @if (result(); as r) {
+          {{ r.totalCount }} {{ r.totalCount === 1 ? 'document' : 'documents' }}
         }
-      </div>
+      </span>
+      <app-filter-chip
+        label="Sort"
+        [options]="sortOptions"
+        [value]="query().sort === '-updated' ? '' : query().sort"
+        allLabel="Recently updated"
+        (valueChange)="set('sort', $event || '-updated')"
+      />
+    </div>
+
+    @if (error()) {
+      <app-empty icon="triangle-alert" heading="The register could not be loaded" [text]="error()">
+        <button type="button" class="btn btn-secondary" (click)="retry()">Try again</button>
+      </app-empty>
+    } @else if (loading() && !result()) {
+      <app-skeleton-rows label="Loading documents" [widths]="[12, 36, 12, 8, 10, 10, 8]" />
     } @else if (result(); as r) {
       @if (r.items.length === 0) {
-        <div class="state-box">
-          <h3>No documents match</h3>
-          <p>
-            {{
-              hasFilters()
-                ? 'Try clearing a filter.'
-                : 'Upload the first controlled document for this project.'
-            }}
-          </p>
-        </div>
+        <app-empty
+          icon="files"
+          heading="No documents match"
+          [text]="
+            activeFilters() > 0
+              ? 'Try removing a filter.'
+              : 'Upload the first controlled document for this project.'
+          "
+        >
+          @if (activeFilters() > 0) {
+            <button type="button" class="btn btn-secondary" (click)="clearFilters()">
+              Clear filters
+            </button>
+          }
+        </app-empty>
       } @else {
-        <div class="table-scroll">
-          <table class="data-table">
+        <div class="table-wrap">
+          <table class="table">
             <caption class="visually-hidden">
               Controlled documents,
               {{
@@ -133,25 +120,23 @@
                 <th scope="col">Status</th>
                 <th scope="col">Revisions</th>
                 <th scope="col">Review</th>
-                <th scope="col">Updated</th>
+                <th scope="col" class="num-cell">Updated</th>
               </tr>
             </thead>
             <tbody>
               @for (d of r.items; track d.id) {
-                <tr>
-                  <td class="mono num">
-                    <a [routerLink]="['/app/documents', d.id]">{{ d.documentNumber }}</a>
+                <tr class="clickable" (click)="open(d, $event)">
+                  <td class="num">
+                    <a class="cell-link doc-num" [routerLink]="['/app/documents', d.id]">{{
+                      d.documentNumber
+                    }}</a>
                   </td>
-                  <td>
+                  <td class="title-cell">
                     {{ d.title }}
-                    <span class="cat small muted">{{ label(d.category) }}</span>
+                    <span class="sub">{{ label(d.category) }}</span>
                   </td>
-                  <td>{{ label(d.discipline) }}</td>
-                  <td>
-                    <span class="chip" [class]="'chip ' + tone(d.status)">{{
-                      label(d.status)
-                    }}</span>
-                  </td>
+                  <td class="nowrap">{{ label(d.discipline) }}</td>
+                  <td><app-status [value]="d.status" /></td>
                   <td>
                     <span class="revs">
                       @for (rev of d.revisions; track rev.id) {
@@ -168,26 +153,27 @@
                     </span>
                   </td>
                   <td>
-                    @if (d.currentApprovalStatus) {
-                      <span [class]="'chip ' + tone(d.currentApprovalStatus)">{{
-                        label(d.currentApprovalStatus)
-                      }}</span>
+                    @if (d.currentApprovalStatus && d.currentApprovalStatus !== 'NotReviewed') {
+                      <app-status [value]="d.currentApprovalStatus" />
+                    } @else {
+                      <span class="text-2">—</span>
                     }
                   </td>
-                  <td class="small muted">{{ d.updatedAt | date: 'mediumDate' }}</td>
+                  <td class="num-cell text-2">{{ d.updatedAt | shortDate }}</td>
                 </tr>
               }
             </tbody>
           </table>
         </div>
-        <mat-paginator
-          [length]="r.totalCount"
-          [pageIndex]="r.page - 1"
-          [pageSize]="r.pageSize"
-          [pageSizeOptions]="[10, 20, 50]"
-          (page)="onPage($event)"
-          aria-label="Document pages"
-        />
+        @if (r.totalCount > r.pageSize) {
+          <app-pager
+            [page]="r.page"
+            [pageSize]="r.pageSize"
+            [total]="r.totalCount"
+            ariaLabel="Document pages"
+            (pageChange)="set('page', $event)"
+          />
+        }
       }
     }
   </section>
