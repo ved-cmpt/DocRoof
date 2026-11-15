@@ -10,11 +10,11 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../core/api.service';
 import { Revision } from '../core/api.models';
 import { problemMessage } from '../core/http';
+import { IconComponent, StatusChipComponent } from './ui';
 
 interface PdfPageProxy {
   getViewport(o: { scale: number }): { width: number; height: number };
@@ -46,29 +46,46 @@ interface PdfLoadingTask {
  */
 @Component({
   selector: 'app-file-preview',
-  imports: [MatButtonModule],
+  imports: [IconComponent, StatusChipComponent],
   template: `
     <div class="preview" [attr.aria-busy]="loading()">
       @if (!revision().previewSupported) {
-        <div class="notice" role="note">
-          @if (revision().hasActiveContent) {
-            This PDF contains active content (scripts, launch actions or embedded files). It is
-            available as a download only.
-          } @else {
-            Preview is not available for this file type. Use Download.
-          }
+        <div class="state">
+          <div class="alert" [class.tone-warning]="revision().hasActiveContent" role="note">
+            <app-icon [name]="revision().hasActiveContent ? 'shield-check' : 'info'" [size]="16" />
+            <p>
+              @if (revision().hasActiveContent) {
+                This PDF contains active content (scripts, launch actions or embedded files), so it
+                is available as a download only.
+              } @else {
+                Preview is not available for this file type. Use Download.
+              }
+            </p>
+          </div>
         </div>
       } @else if (error()) {
-        <div class="error-box" role="alert">{{ error() }}</div>
+        <div class="state">
+          <div class="alert tone-danger" role="alert">
+            <app-icon name="triangle-alert" [size]="16" />
+            <p>{{ error() }}</p>
+          </div>
+        </div>
       } @else {
         @if (kind() === 'pdf') {
-          <div class="toolbar row" role="toolbar" aria-label="Page navigation">
-            <button mat-stroked-button (click)="go(page() - 1)" [disabled]="page() <= 1">
-              Previous
+          <div class="toolbar-row" role="toolbar" aria-label="Page navigation">
+            <button
+              type="button"
+              class="btn btn-icon"
+              (click)="go(page() - 1)"
+              [disabled]="page() <= 1"
+              aria-label="Previous page"
+            >
+              <app-icon name="chevron-left" />
             </button>
             <label class="page-input">
-              Page
+              <span class="visually-hidden">Page number</span>
               <input
+                class="input input-sm"
                 type="number"
                 min="1"
                 [max]="pages()"
@@ -76,13 +93,19 @@ interface PdfLoadingTask {
                 (change)="go(+$any($event.target).value)"
                 aria-label="Page number"
               />
-              of {{ pages() }}
+              <span class="of">of {{ pages() }}</span>
             </label>
-            <button mat-stroked-button (click)="go(page() + 1)" [disabled]="page() >= pages()">
-              Next
+            <button
+              type="button"
+              class="btn btn-icon"
+              (click)="go(page() + 1)"
+              [disabled]="page() >= pages()"
+              aria-label="Next page"
+            >
+              <app-icon name="chevron-right" />
             </button>
             @if (!revision().hasTextLayer) {
-              <span class="chip warn plain">No text layer</span>
+              <app-status value="No text layer" tone="warning" />
             }
           </div>
           <div class="canvas-wrap">
@@ -95,13 +118,18 @@ interface PdfLoadingTask {
         } @else if (kind() === 'text') {
           <pre class="text-preview" tabindex="0" aria-label="Text content">{{ text() }}</pre>
         } @else if (kind() === 'image') {
-          <img
-            [src]="imageUrl()"
-            [alt]="'Image revision ' + revision().versionLabel + ': ' + revision().fileName"
-          />
+          <div class="canvas-wrap">
+            <img
+              [src]="imageUrl()"
+              [alt]="'Image revision ' + revision().versionLabel + ': ' + revision().fileName"
+            />
+          </div>
         }
         @if (loading()) {
-          <p class="muted small" role="status">Loading preview…</p>
+          <div class="loading" role="status">
+            <span class="skeleton sheet"></span>
+            <span class="visually-hidden">Loading preview…</span>
+          </div>
         }
       }
     </div>
@@ -110,50 +138,72 @@ interface PdfLoadingTask {
     .preview {
       display: flex;
       flex-direction: column;
-      gap: 10px;
     }
-    .toolbar {
-      gap: 8px;
+    .state {
+      padding: 16px;
     }
-    .page-input input {
+    .toolbar-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .page-input {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-2);
+      font-size: var(--fs-13);
+    }
+    .page-input .input {
       width: 56px;
-      margin: 0 4px;
-      padding: 4px;
-      font: inherit;
-      border: 1px solid var(--line-strong);
-      border-radius: 4px;
+      text-align: center;
+      padding: 0 4px;
+    }
+    .of {
+      white-space: nowrap;
     }
     .canvas-wrap {
-      background: var(--concrete-2);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 12px;
+      background: var(--surface-subtle);
+      padding: 20px;
       overflow: auto;
-      max-height: 78vh;
+      max-height: 74vh;
       text-align: center;
+      border-radius: 0 0 var(--r-md) var(--r-md);
     }
-    canvas {
+    canvas,
+    img {
       max-width: 100%;
       height: auto;
-      box-shadow: var(--shadow-2);
       background: #fff;
+      box-shadow: var(--shadow-card), 0 0 0 1px var(--border);
     }
     .text-preview {
       white-space: pre-wrap;
       word-break: break-word;
       font-family: var(--font-mono);
-      font-size: 0.85rem;
-      background: #fbfbfa;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
+      font-size: var(--fs-13);
+      background: var(--surface);
       padding: 16px;
       max-height: 70vh;
       overflow: auto;
       margin: 0;
     }
-    img {
-      max-width: 100%;
-      border: 1px solid var(--line);
+    .loading {
+      padding: 20px;
+      background: var(--surface-subtle);
+    }
+    .sheet {
+      height: 360px;
+      max-width: 520px;
+      margin: 0 auto;
+      background: var(--surface);
+    }
+    @media (max-width: 600px) {
+      .canvas-wrap {
+        padding: 12px;
+      }
     }
   `,
 })

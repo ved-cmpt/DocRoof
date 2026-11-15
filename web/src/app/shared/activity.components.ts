@@ -1,188 +1,257 @@
-import { DatePipe } from '@angular/common';
-import { Component, inject, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatInputModule } from '@angular/material/input';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { AuditEvent, Comment } from '../core/api.models';
 import { problemMessage } from '../core/http';
-import { auditLabel } from '../core/labels';
+import { EventText, describeEvent } from './activity';
+import { AvatarComponent, IconComponent, LongDateTimePipe, RelativeTimePipe } from './ui';
 
-/** Summarizes an audit event's after-state for display (identifiers and checksums are omitted). */
-export function auditSummary(e: AuditEvent): string {
-  try {
-    const parsed = JSON.parse(e.changeJson) as { after?: Record<string, unknown> };
-    return Object.entries(parsed.after ?? {})
-      .filter(([k, v]) => v !== null && !/id$|sha/i.test(k))
-      .map(
-        ([k, v]) =>
-          `${k}: ${typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v) ? v.slice(0, 10) : String(v)}`,
-      )
-      .join(' · ');
-  } catch {
-    return '';
-  }
+interface Row {
+  event: AuditEvent;
+  text: EventText;
 }
 
+/** Activity as a clean vertical list: avatar, one short sentence, relative time. */
 @Component({
   selector: 'app-timeline',
-  imports: [DatePipe],
+  imports: [AvatarComponent, RelativeTimePipe, LongDateTimePipe],
   template: `
-    @if (events().length === 0) {
-      <p class="muted empty">No events recorded yet.</p>
+    @if (rows().length === 0) {
+      <p class="none">No activity yet.</p>
     } @else {
-      <ol class="timeline" [attr.aria-label]="label()">
-        @for (e of events(); track e.id) {
+      <ol class="feed" [attr.aria-label]="label()">
+        @for (r of rows(); track r.event.id) {
           <li>
-            <span class="when small muted">
-              <time [attr.datetime]="e.timestamp">{{ e.timestamp | date: 'MMM d, y, HH:mm' }}</time>
-            </span>
-            <span>
-              <strong>{{ e.actor?.displayName ?? 'System' }}</strong> {{ verb(e.action) }}
-              @if (showReference() && e.reference) {
-                <span class="mono small">{{ e.reference }}</span>
+            <app-avatar [name]="r.event.actor?.displayName ?? 'System'" />
+            <div class="body">
+              <p class="line">
+                <strong>{{ r.event.actor?.displayName ?? 'System' }}</strong>
+                {{ r.text.verb }}
+                @if (r.text.object) {
+                  <span class="obj">{{ r.text.object }}</span>
+                }
+                @if (r.text.meta) {
+                  <span class="meta"> · {{ r.text.meta }}</span>
+                }
+              </p>
+              @if (r.text.quote) {
+                <p class="quote">“{{ r.text.quote }}”</p>
               }
-            </span>
-            @if (summary(e); as s) {
-              <span class="small muted detail">{{ s }}</span>
-            }
+            </div>
+            <time [attr.datetime]="r.event.timestamp" [title]="r.event.timestamp | longDate">{{
+              r.event.timestamp | relTime
+            }}</time>
           </li>
         }
       </ol>
     }
   `,
   styles: `
-    .empty {
-      padding: 12px 20px;
+    .none {
+      margin: 0;
+      padding: 16px;
+      color: var(--text-2);
     }
-    .timeline {
+    .feed {
       list-style: none;
       margin: 0;
-      padding: 8px 20px 16px;
+      padding: 8px 16px 12px;
     }
     li {
-      display: flex;
-      flex-direction: column;
-      padding: 8px 0 8px 16px;
-      border-left: 2px solid var(--line);
       position: relative;
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr) auto;
+      gap: 10px;
+      padding: 8px 0;
     }
-    li::before {
+    li:not(:last-child)::before {
       content: '';
       position: absolute;
-      left: -6px;
-      top: 13px;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--amber);
-      border: 2px solid #fff;
+      left: 11.5px;
+      top: 36px;
+      bottom: -6px;
+      width: 1px;
+      background: var(--border);
     }
-    .detail {
+    .body {
+      min-width: 0;
+    }
+    .line {
+      margin: 2px 0 0;
+      line-height: 1.45;
       overflow-wrap: anywhere;
+    }
+    strong {
+      font-weight: 600;
+    }
+    .obj {
+      font-weight: 500;
+    }
+    .meta {
+      color: var(--text-2);
+    }
+    .quote {
+      margin: 4px 0 0;
+      color: var(--text-2);
+      font-size: var(--fs-13);
+      overflow-wrap: anywhere;
+    }
+    time {
+      color: var(--text-2);
+      font-size: var(--fs-12);
+      white-space: nowrap;
+      padding-top: 3px;
     }
   `,
 })
 export class TimelineComponent {
   readonly events = input.required<AuditEvent[]>();
-  readonly label = input('Timeline');
-  readonly showReference = input(false);
-  protected readonly verb = auditLabel;
-  protected readonly summary = auditSummary;
+  readonly label = input('Activity');
+  /** Newest first unless told otherwise. */
+  readonly newestFirst = input(true);
+  protected readonly rows = computed<Row[]>(() => {
+    const sorted = [...this.events()].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    if (this.newestFirst()) {
+      sorted.reverse();
+    }
+    return sorted.map((event) => ({ event, text: describeEvent(event) }));
+  });
 }
 
 @Component({
   selector: 'app-comments',
-  imports: [DatePipe, FormsModule, MatButtonModule, MatInputModule, RouterLink],
+  imports: [FormsModule, RouterLink, AvatarComponent, IconComponent, RelativeTimePipe, LongDateTimePipe],
   template: `
     @if (comments().length === 0) {
-      <p class="muted small">No comments yet.</p>
+      <p class="none">No comments yet. Start the conversation below.</p>
+    } @else {
+      <ul class="comments">
+        @for (c of comments(); track c.id) {
+          <li>
+            <app-avatar [name]="c.author.displayName" />
+            <div class="body">
+              <div class="meta">
+                <strong>{{ c.author.displayName }}</strong>
+                <time [attr.datetime]="c.createdAt" [title]="c.createdAt | longDate">{{
+                  c.createdAt | relTime
+                }}</time>
+                @if (c.page && documentId()) {
+                  <a
+                    class="cite"
+                    [routerLink]="['/app/documents', documentId()]"
+                    [queryParams]="{ rev: c.revisionId, page: c.page }"
+                    >{{ c.versionLabel }} · p.{{ c.page }}</a
+                  >
+                } @else if (c.page) {
+                  <span class="cite">p.{{ c.page }}</span>
+                }
+              </div>
+              <p class="text">{{ c.body }}</p>
+            </div>
+          </li>
+        }
+      </ul>
     }
-    <ul class="comments">
-      @for (c of comments(); track c.id) {
-        <li>
-          <div class="meta small">
-            <strong>{{ c.author.displayName }}</strong>
-            <span class="muted">{{ c.createdAt | date: 'MMM d, HH:mm' }}</span>
-            @if (c.page && documentId()) {
-              <a
-                class="cite"
-                [routerLink]="['/app/documents', documentId()]"
-                [queryParams]="{ rev: c.revisionId, page: c.page }"
-                >{{ c.versionLabel }} · page {{ c.page }}</a
-              >
-            } @else if (c.page) {
-              <span class="cite">page {{ c.page }}</span>
-            }
-          </div>
-          <p class="body">{{ c.body }}</p>
-        </li>
+    <form class="composer" (ngSubmit)="add()">
+      <label class="visually-hidden" [for]="'comment-' + resourceId()">Add a comment</label>
+      <textarea
+        class="textarea"
+        [id]="'comment-' + resourceId()"
+        name="body"
+        [(ngModel)]="body"
+        rows="2"
+        maxlength="4000"
+        placeholder="Write a comment…"
+      ></textarea>
+      <div class="composer-foot">
+        @if (revisionId()) {
+          <label class="page-field">
+            <span>Cite page</span>
+            <input
+              class="input input-sm"
+              type="number"
+              name="page"
+              min="1"
+              [max]="maxPage()"
+              [(ngModel)]="page"
+              placeholder="—"
+            />
+          </label>
+        }
+        <span class="spacer"></span>
+        <button class="btn btn-secondary btn-sm" type="submit" [disabled]="busy() || !body.trim()">
+          <app-icon name="send" [size]="16" /> Comment
+        </button>
+      </div>
+      @if (error()) {
+        <p class="field-error" role="alert">{{ error() }}</p>
       }
-    </ul>
-    <form class="add" (ngSubmit)="add()" #f="ngForm">
-      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="text">
-        <mat-label>Add a comment</mat-label>
-        <textarea
-          matInput
-          name="body"
-          [(ngModel)]="body"
-          rows="2"
-          maxlength="4000"
-          required
-        ></textarea>
-      </mat-form-field>
-      @if (revisionId()) {
-        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="page">
-          <mat-label>Page (optional)</mat-label>
-          <input matInput type="number" name="page" min="1" [max]="maxPage()" [(ngModel)]="page" />
-        </mat-form-field>
-      }
-      <button mat-stroked-button type="submit" [disabled]="busy() || !body.trim()">Comment</button>
     </form>
-    @if (error()) {
-      <div class="error-box small" role="alert">{{ error() }}</div>
-    }
   `,
   styles: `
+    .none {
+      margin: 0 0 12px;
+      color: var(--text-2);
+    }
     .comments {
       list-style: none;
       margin: 0 0 12px;
       padding: 0;
     }
     li {
-      padding: 10px 0;
-      border-bottom: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr);
+      gap: 10px;
+      padding: 8px 0;
     }
     .meta {
       display: flex;
-      gap: 8px;
       align-items: center;
+      gap: 8px;
       flex-wrap: wrap;
+      font-size: var(--fs-13);
+    }
+    time {
+      color: var(--text-2);
+      font-size: var(--fs-12);
     }
     .cite {
       font-family: var(--font-mono);
-      font-size: 0.78rem;
+      font-size: var(--fs-12);
       padding: 1px 6px;
-      border-radius: 4px;
-      background: var(--blueprint-soft);
+      border-radius: var(--r-sm);
+      background: var(--brand-tint);
+      color: var(--brand-hover);
     }
-    .body {
-      margin: 4px 0 0;
+    .text {
+      margin: 2px 0 0;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
     }
-    .add {
+    .composer {
       display: flex;
+      flex-direction: column;
       gap: 8px;
-      align-items: flex-start;
+    }
+    .textarea {
+      min-height: 64px;
+    }
+    .composer-foot {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       flex-wrap: wrap;
     }
-    .text {
-      flex: 1 1 260px;
+    .page-field {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-2);
+      font-size: var(--fs-13);
     }
-    .page {
-      width: 140px;
+    .page-field .input {
+      width: 72px;
     }
   `,
 })

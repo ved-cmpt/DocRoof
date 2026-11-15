@@ -19,6 +19,7 @@ const LABELS: Record<string, string> = {
   ExtractionSuggestion: 'Extraction suggestion',
   SpecSection: 'Spec section',
   DocumentNumber: 'Document number',
+  Rfi: 'RFI',
 };
 
 export function label(value: string | null | undefined): string {
@@ -28,27 +29,33 @@ export function label(value: string | null | undefined): string {
   return LABELS[value] ?? value.replace(/([a-z])([A-Z])/g, '$1 $2');
 }
 
-/** Tone used by status chips: neutral, info, warn, success, danger. */
-export function tone(value: string | null | undefined): string {
+export type Tone = 'neutral' | 'info' | 'warning' | 'success' | 'danger';
+
+/**
+ * Status colour used by chips. Colour carries meaning only: waiting = info, needs action = warning,
+ * done = success, refused = danger, everything else neutral.
+ */
+export function tone(value: string | null | undefined): Tone {
   switch (value) {
     case 'Approved':
+    case 'ApprovedWithComments':
     case 'Final':
     case 'Closed':
     case 'Issued':
     case 'Accepted':
       return 'success';
-    case 'ApprovedWithComments':
+    case 'Submitted':
+    case 'Assigned':
     case 'Answered':
     case 'InReview':
     case 'Pending':
       return 'info';
     case 'ReviseAndResubmit':
     case 'Reopened':
+      return 'warning';
     case 'Rejected':
+    case 'Overdue':
       return 'danger';
-    case 'Submitted':
-    case 'Assigned':
-      return 'warn';
     default:
       return 'neutral';
   }
