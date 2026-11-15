@@ -1,28 +1,26 @@
 # Owner-only actions
 
-These steps need the repository owner's accounts, money decisions or judgement. **None of them has been done.**
+These steps need the repository owner's accounts, money decisions or judgement.
 
-## 1. Publish the repository on GitHub
+**Remaining:** deploy on Render with the Azure SQL Database free offer (section 3), review the open Dependabot
+PRs, and the optional decisions in section 4.
 
-```powershell
-# Create an empty repository named DocRoof on github.com first (no README, licence or .gitignore), then:
-git remote add origin https://github.com/<your-user>/DocRoof.git
-git push -u origin main
-```
+## 1. Publish the repository on GitHub — DONE (2026-11-15)
 
-Then open the **Actions** tab and check the `ci` workflow. Integration tests use Testcontainers, which works on
-GitHub's ubuntu runners without extra setup. Dependabot (monthly, grouped, max 2 open PRs per ecosystem) starts
-automatically from `.github/dependabot.yml`.
+- `gh search repos docroof` returned no repositories, so there was no name conflict.
+- Public repository: https://github.com/ved-cmpt/DocRoof. Description and topics are set; the homepage is empty
+  until the hosted URL exists (`gh repo edit ved-cmpt/DocRoof --homepage https://<service>.onrender.com`).
+- CI is green on `main`. The first run failed because `Infrastructure/Data` was ignored; PR #4 fixed it.
+- `main` is protected: PR required (0 approvals), required check `ci-ok`, force-push and deletion blocked.
+  Admins are not included in the rules ("Do not allow bypassing" is off). Turn that on in Settings → Branches if
+  every change, including your own, should go through a PR.
+- Release: https://github.com/ved-cmpt/DocRoof/releases/tag/v1.0.0
+- Dependabot opened PRs #1 (docker), #2 (actions) and #3 (npm). Review them and merge each one once `ci-ok` is
+  green.
 
-## 2. Set the GitHub link on the site
+## 2. Set the GitHub link on the site — DONE (2026-11-15)
 
-Edit `web/src/app/shared/site.ts`:
-
-```ts
-export const GITHUB_URL = 'https://github.com/<your-user>/DocRoof';
-```
-
-It is used by the landing footer and the case study.
+`GITHUB_URL` in `web/src/app/shared/site.ts` is `https://github.com/ved-cmpt/DocRoof` (PR #4).
 
 ## 3. Deploy (free tier) — optional, needs accounts
 
@@ -33,6 +31,7 @@ Follow docs/DEPLOYMENT.md:
 2. Create the Render **Blueprint** from `infra/render.yaml` and paste the connection string as a secret.
 3. Run `./scripts/smoke.sh https://<service>.onrender.com` (or `smoke.ps1`).
 4. Record the URL and the real smoke output in docs/STATUS.md and mark deployment complete there.
+5. Set the repository homepage to the hosted URL (see section 1).
 
 ## 4. Optional decisions
 

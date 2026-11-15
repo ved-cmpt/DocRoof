@@ -1,7 +1,8 @@
 # Status
 
-Last updated: 2026-11-15 — **all three phases implemented and verified locally. Hosted deployment: NOT COMPLETE**
-(needs the owner's accounts; see [OWNER_TODO.md](OWNER_TODO.md)).
+Last updated: 2026-11-15 — **all three phases implemented, verified locally and on GitHub Actions. Published at
+https://github.com/ved-cmpt/DocRoof (release v1.0.0). Hosted deployment: NOT COMPLETE** (needs the owner's Render
+and Azure accounts; see [OWNER_TODO.md](OWNER_TODO.md)).
 
 ## Phase checklist
 
@@ -10,7 +11,8 @@ Last updated: 2026-11-15 — **all three phases implemented and verified locally
 - [x] **Phase 3 — Hardening, presentation, deployment readiness** (this commit set)
 - [ ] Hosted deployment — **not done**: no cloud accounts were available. Image, `infra/render.yaml`,
   `infra/azure/sql-free.bicep`, docs/DEPLOYMENT.md and smoke scripts are ready.
-- [ ] CI on GitHub — **never run**: no remote exists yet. The workflow was written and its steps were run locally.
+- [x] Published on GitHub — public repository https://github.com/ved-cmpt/DocRoof, CI green on `main`, branch
+  protection on `main`, release [v1.0.0](https://github.com/ved-cmpt/DocRoof/releases/tag/v1.0.0).
 
 ## Toolchain (inspected 2026-11-15)
 
@@ -85,6 +87,27 @@ page, test hardening); the landing page itself was unchanged afterwards.
   containers are positioned.
 - The keyboard test flaked once (tabbing before the lazy page rendered) → it now waits for content.
 
+## GitHub publication (2026-11-15)
+
+| Command | Result |
+| --- | --- |
+| `gh search repos docroof` | no repositories found, so no name conflict |
+| `gh repo create ved-cmpt/DocRoof --public --source . --remote origin --push` | repository created, `main` pushed |
+| `gh repo edit … --homepage "" --add-topic …` | About description and 10 topics set, homepage empty |
+| `gh run watch 43702227377` (first CI run, `main` at `b67f927`) | **failed**: backend and Docker jobs hit `CS0234 … 'Data' does not exist in the namespace 'DocRoof.Infrastructure'`; frontend passed; e2e skipped |
+| clean clone of the fix branch: `dotnet format --verify-no-changes`, `dotnet build -c Release` | exit 0; 0 warnings, 0 errors |
+| PR [#4](https://github.com/ved-cmpt/DocRoof/pull/4) `ci-and-links`, run [43702543181](https://github.com/ved-cmpt/DocRoof/actions/runs/43702543181) | all jobs passed, `ci-ok` green; squash-merged, branch deleted |
+| `main` CI after merge, run [43702943687](https://github.com/ved-cmpt/DocRoof/actions/runs/43702943687) (`5ba6f16`) | all jobs passed: unit **121**, integration **57**, Angular **23**, Playwright **9**, Docker image build + smoke passed, `ci-ok` green |
+| `gh api -X PUT repos/ved-cmpt/DocRoof/branches/main/protection` | PR required (0 approvals), required check `ci-ok`, force-push and deletion blocked (read back with `gh api`) |
+| `gh release create v1.0.0 --target 5ba6f16` | https://github.com/ved-cmpt/DocRoof/releases/tag/v1.0.0 |
+
+**Cause of the first failure:** the unanchored `data/` rule in `.gitignore` also matched
+`api/src/DocRoof.Infrastructure/Data/` on Windows (case-insensitive), so the DbContext, interceptors and migrations had
+never been committed. The rule is now `/data/` (ADR-023). Earlier local results were real, but they came from a
+working tree that held those files.
+
+Dependabot opened PRs #1 (docker), #2 (actions) and #3 (npm) on first push. They are left for the owner to review.
+
 ## Earlier phase runs (for history)
 
 - Phase 2 (2026-11-15): unit 104, integration 38, Angular 20, Playwright 3 — all passed. First e2e attempt hit the
@@ -93,7 +116,7 @@ page, test hardening); the landing page itself was unchanged afterwards.
 
 ## Known issues and limitations
 
-- Hosted deployment not done (owner accounts). CI never executed on GitHub.
+- Hosted deployment not done (owner accounts: Render + Azure SQL free offer).
 - Mobile Lighthouse performance (72) is limited by client-side rendering of the landing page; prerendering `/` and
   `/case-study` would be the next step.
 - No malware scanning, no OCR, heuristic PDF active-content detection, in-app notifications only (see SECURITY.md).
@@ -102,8 +125,8 @@ page, test hardening); the landing page itself was unchanged afterwards.
 
 ## Owner actions needed
 
-See [OWNER_TODO.md](OWNER_TODO.md): push to GitHub, set `GITHUB_URL`, optionally deploy (Azure SQL free offer +
-Render free web service) and record the real smoke output here.
+See [OWNER_TODO.md](OWNER_TODO.md): deploy (Azure SQL free offer + Render free web service), record the real smoke
+output here, and review the open Dependabot PRs.
 
 ## Next steps (optional)
 
