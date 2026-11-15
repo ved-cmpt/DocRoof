@@ -1,94 +1,207 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatInputModule } from '@angular/material/input';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { problemMessage } from '../../core/http';
 import { SessionService } from '../../core/session.service';
-import { PublicFooterComponent, PublicHeaderComponent } from '../../shared/brand';
+import { IconComponent, LogoComponent } from '../../shared/ui';
 
 @Component({
   selector: 'app-login-page',
-  imports: [
-    ReactiveFormsModule,
-    MatInputModule,
-    MatButtonModule,
-    RouterLink,
-    PublicHeaderComponent,
-    PublicFooterComponent,
-  ],
+  imports: [ReactiveFormsModule, RouterLink, LogoComponent, IconComponent],
   template: `
-    <app-public-header />
-    <main id="main" class="auth-wrap">
-      <section class="panel auth-card" aria-labelledby="login-title">
-        <p class="eyebrow">Sample workspace</p>
-        <h1 id="login-title">Sign in</h1>
-        @if (expired) {
-          <p class="notice info" role="status">
-            Your session ended. Sign in again or start a fresh demo.
-          </p>
-        }
-        <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-          <mat-form-field appearance="outline">
-            <mat-label>Email</mat-label>
-            <input matInput type="email" formControlName="email" autocomplete="username" required />
-            @if (form.controls.email.hasError('email')) {
-              <mat-error>Enter a valid email address.</mat-error>
-            } @else if (form.controls.email.hasError('required')) {
-              <mat-error>Email is required.</mat-error>
-            }
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Password</mat-label>
-            <input
-              matInput
-              type="password"
-              formControlName="password"
-              autocomplete="current-password"
-              required
-            />
-            @if (form.controls.password.hasError('required')) {
-              <mat-error>Password is required.</mat-error>
-            }
-          </mat-form-field>
-          @if (error()) {
-            <div class="error-box" role="alert">{{ error() }}</div>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="split">
+      <main id="main" tabindex="-1" class="form-side">
+        <a routerLink="/" class="home" aria-label="DocRoof home">
+          <app-logo [size]="28" [wordmark]="true" />
+        </a>
+        <section class="card auth" aria-labelledby="login-title">
+          <h1 id="login-title">Sign in</h1>
+          <p class="sub">Use a sample account, or skip this and open the demo.</p>
+          @if (expired) {
+            <div class="alert tone-info" role="status">
+              <app-icon name="info" [size]="16" />
+              <p>Your session ended. Sign in again or start a fresh demo.</p>
+            </div>
           }
-          <button mat-flat-button type="submit" [disabled]="busy()">
-            {{ busy() ? 'Signing in…' : 'Sign in' }}
-          </button>
-        </form>
-        <p class="hint small muted">
-          Local development seeds sample accounts such as
-          <code>controller.sample&#64;docroof.test</code> with the intentionally public password
-          documented in SECURITY.md. Hosted visitors should use the
-          <a routerLink="/demo">one-click guest demo</a> instead — no sign-up needed.
-        </p>
-      </section>
-    </main>
-    <app-public-footer />
+          <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="form-grid">
+            <div class="field">
+              <label class="field-label" for="login-email">Email</label>
+              <input
+                id="login-email"
+                class="input"
+                type="email"
+                formControlName="email"
+                autocomplete="username"
+              />
+              @if (invalid('email')) {
+                <p class="field-error">
+                  {{
+                    form.controls.email.hasError('email')
+                      ? 'Enter a valid email address.'
+                      : 'Email is required.'
+                  }}
+                </p>
+              }
+            </div>
+            <div class="field">
+              <label class="field-label" for="login-password">Password</label>
+              <input
+                id="login-password"
+                class="input"
+                type="password"
+                formControlName="password"
+                autocomplete="current-password"
+              />
+              @if (invalid('password')) {
+                <p class="field-error">Password is required.</p>
+              }
+            </div>
+            @if (error()) {
+              <div class="alert tone-danger" role="alert">
+                <app-icon name="triangle-alert" [size]="16" />
+                <p>{{ error() }}</p>
+              </div>
+            }
+            <button type="submit" class="btn btn-primary btn-block" [disabled]="busy()">
+              {{ busy() ? 'Signing in…' : 'Sign in' }}
+            </button>
+          </form>
+          <div class="or" aria-hidden="true"><span>or</span></div>
+          <a routerLink="/demo" class="btn btn-secondary btn-lg btn-block">
+            Try the demo instead — no sign-up
+          </a>
+          <details class="dev">
+            <summary>Developer sample accounts</summary>
+            <p>
+              Local development seeds accounts such as
+              <code>controller.sample&#64;docroof.test</code>. Their intentionally public password
+              is documented in SECURITY.md. Hosted visitors should use the guest demo.
+            </p>
+          </details>
+        </section>
+      </main>
+      <aside class="brand-side" aria-hidden="true">
+        <div class="brand-inner">
+          <app-logo [size]="56" />
+          <p><span>Every revision.</span> <span>Every answer.</span> <span>On record.</span></p>
+        </div>
+      </aside>
+    </div>
   `,
   styles: `
-    .auth-wrap {
+    .split {
       display: grid;
-      place-items: center;
-      padding: 56px 16px 0;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      min-height: 100dvh;
     }
-    .auth-card {
-      width: min(440px, 100%);
-      padding: 28px;
-    }
-    form {
+    .form-side {
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      margin-top: 12px;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      padding: 32px 24px;
+      outline: none;
     }
-    .error-box {
-      margin-bottom: 12px;
+    .home {
+      border-radius: var(--r-sm);
     }
-    .hint {
-      margin-top: 18px;
+    .home:hover {
+      text-decoration: none;
+    }
+    .auth {
+      width: min(400px, 100%);
+      padding: 28px;
+    }
+    h1 {
+      font-size: var(--fs-24);
+      margin-bottom: 4px;
+    }
+    .sub {
+      color: var(--text-2);
+      margin-bottom: 20px;
+    }
+    .alert {
+      margin-bottom: 16px;
+    }
+    .or {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0;
+      color: var(--text-2);
+      font-size: var(--fs-12);
+    }
+    .or::before,
+    .or::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .dev {
+      margin-top: 20px;
+      color: var(--text-2);
+      font-size: var(--fs-13);
+    }
+    .dev summary {
+      cursor: pointer;
+      border-radius: var(--r-sm);
+      width: fit-content;
+    }
+    .dev p {
+      margin: 8px 0 0;
+    }
+    .brand-side {
+      position: relative;
+      overflow: hidden;
+      background: var(--brand-tint);
+      border-left: 1px solid var(--border);
+    }
+    .brand-side::after {
+      content: '';
+      position: absolute;
+      right: -120px;
+      bottom: -120px;
+      width: 420px;
+      height: 420px;
+      border-radius: 40px;
+      transform: rotate(45deg);
+      border: 1px solid color-mix(in srgb, var(--brand) 18%, transparent);
+    }
+    .brand-inner {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 64px;
+      gap: 20px;
+    }
+    .brand-inner p span {
+      display: block;
+    }
+    .brand-inner p {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: var(--fs-32);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      color: var(--brand-hover);
+    }
+    @media (max-width: 860px) {
+      .split {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .brand-side {
+        display: none;
+      }
+      .auth {
+        padding: 20px;
+      }
     }
   `,
 })
@@ -105,6 +218,11 @@ export class LoginPage {
     email: ['', [Validators.required, Validators.email]],
     password: ['', Validators.required],
   });
+
+  protected invalid(name: 'email' | 'password'): boolean {
+    const c = this.form.controls[name];
+    return c.invalid && c.touched;
+  }
 
   protected async submit(): Promise<void> {
     if (this.form.invalid) {
