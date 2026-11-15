@@ -59,7 +59,8 @@
       />
       @if (activeFilters() > 0) {
         <button type="button" class="btn btn-ghost btn-sm" (click)="clearFilters()">
-          Clear <span class="filter-badge" [attr.aria-label]="activeFilters() + ' active'">{{
+          Clear
+          <span class="filter-badge" [attr.aria-label]="activeFilters() + ' active'">{{
             activeFilters()
           }}</span>
         </button>

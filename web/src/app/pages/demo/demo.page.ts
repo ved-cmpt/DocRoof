@@ -35,12 +35,16 @@ export function isUnreachable(e: unknown): boolean {
       </a>
       <section class="card panel" aria-labelledby="demo-title" aria-live="polite">
         @if (error()) {
-          <span class="err-icon"><app-icon [name]="unreachable() ? 'server-off' : 'triangle-alert'" [size]="22" /></span>
-          <h1 id="demo-title">{{ unreachable() ? 'The demo server is not responding' : 'The demo could not start' }}</h1>
+          <span class="err-icon"
+            ><app-icon [name]="unreachable() ? 'server-off' : 'triangle-alert'" [size]="22"
+          /></span>
+          <h1 id="demo-title">
+            {{ unreachable() ? 'The demo server is not responding' : 'The demo could not start' }}
+          </h1>
           <p class="text">
             @if (unreachable()) {
-              Your workspace is created by the DocRoof API, and it could not be reached. Try again in
-              a moment.
+              Your workspace is created by the DocRoof API, and it could not be reached. Try again
+              in a moment.
             } @else {
               {{ error() }}
             }
@@ -60,7 +64,14 @@ export function isUnreachable(e: unknown): boolean {
         } @else {
           <h1 id="demo-title">Setting up your demo</h1>
           <p class="text">A private workspace with fictional data, deleted after 24 hours.</p>
-          <div class="progress" role="progressbar" aria-label="Creating workspace" aria-valuemin="0" aria-valuemax="3" [attr.aria-valuenow]="step()">
+          <div
+            class="progress"
+            role="progressbar"
+            aria-label="Creating workspace"
+            aria-valuemin="0"
+            aria-valuemax="3"
+            [attr.aria-valuenow]="step()"
+          >
             <span [style.width.%]="((step() + 1) / steps.length) * 100"></span>
           </div>
           <ol class="steps">

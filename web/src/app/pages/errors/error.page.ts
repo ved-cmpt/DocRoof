@@ -8,13 +8,19 @@ import { EmptyStateComponent } from '../../shared/ui';
 /** Error state rendered inside the workspace shell (/app/...) or on the public site. */
 @Component({
   selector: 'app-error-view',
-  imports: [RouterLink, TopbarComponent, PublicHeaderComponent, PublicFooterComponent, EmptyStateComponent],
+  imports: [
+    RouterLink,
+    TopbarComponent,
+    PublicHeaderComponent,
+    PublicFooterComponent,
+    EmptyStateComponent,
+  ],
   template: `
     @if (inApp) {
       <app-topbar [title]="title()" />
       <div class="page">
         <section class="card" [attr.aria-label]="title()">
-          <app-empty [icon]="icon()" [heading]="title()" [text]="text()">
+          <app-empty [icon]="icon()" [heading]="inAppHeading()" [text]="text()">
             <a class="btn btn-secondary" routerLink="/app/documents">Go to documents</a>
           </app-empty>
         </section>
@@ -68,6 +74,10 @@ export class ErrorViewComponent {
   readonly title = input.required<string>();
   readonly text = input.required<string>();
   readonly icon = input<IconName>('circle-question-mark');
+  /** The top bar already shows the title, so the empty state says it in other words. */
+  protected inAppHeading(): string {
+    return this.code() === 403 ? "You don't have access to this" : "We couldn't find that page";
+  }
 }
 
 @Component({

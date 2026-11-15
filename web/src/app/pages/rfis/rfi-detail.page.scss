@@ -16,45 +16,7 @@
 }
 
 .citation {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
   margin-bottom: 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  background: var(--surface-subtle);
-  color: var(--text);
-
-  > .icon {
-    color: var(--brand);
-  }
-
-  > .icon:last-child {
-    color: var(--text-3);
-  }
-
-  &:hover {
-    text-decoration: none;
-    border-color: var(--border-strong);
-  }
-}
-
-.cite-text {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
-}
-
-.cite-doc {
-  font-weight: 500;
-  overflow-wrap: anywhere;
-}
-
-.cite-where {
-  color: var(--text-2);
-  font-size: var(--fs-13);
 }
 
 .alert + .alert {

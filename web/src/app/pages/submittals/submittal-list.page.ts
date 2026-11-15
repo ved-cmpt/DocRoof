@@ -94,7 +94,11 @@ import { SubmittalCreateDialogComponent } from './submittal-create-dialog.compon
           </span>
         </div>
         @if (error()) {
-          <app-empty icon="triangle-alert" heading="Submittals could not be loaded" [text]="error()">
+          <app-empty
+            icon="triangle-alert"
+            heading="Submittals could not be loaded"
+            [text]="error()"
+          >
             <button type="button" class="btn btn-secondary" (click)="retry()">Try again</button>
           </app-empty>
         } @else if (loading() && !result()) {
@@ -104,7 +108,11 @@ import { SubmittalCreateDialogComponent } from './submittal-create-dialog.compon
             <app-empty
               icon="clipboard-check"
               heading="No submittals match"
-              [text]="activeFilters() > 0 ? 'Try removing a filter.' : 'Submit a document for review to start.'"
+              [text]="
+                activeFilters() > 0
+                  ? 'Try removing a filter.'
+                  : 'Submit a document for review to start.'
+              "
             >
               @if (activeFilters() > 0) {
                 <button type="button" class="btn btn-secondary" (click)="clear()">

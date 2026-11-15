@@ -57,7 +57,11 @@ type Scope = 'me' | 'all' | 'overdue';
         </div>
         <div id="queue-panel" role="tabpanel" [attr.aria-labelledby]="'tab-' + scope()">
           @if (error()) {
-            <app-empty icon="triangle-alert" heading="The queue could not be loaded" [text]="error()">
+            <app-empty
+              icon="triangle-alert"
+              heading="The queue could not be loaded"
+              [text]="error()"
+            >
               <button type="button" class="btn btn-secondary" (click)="reload()">Try again</button>
             </app-empty>
           } @else if (loading() && items() === null) {
@@ -98,7 +102,9 @@ type Scope = 'me' | 'all' | 'overdue';
                         <td class="nowrap text-2">
                           <span class="type">
                             <app-icon
-                              [name]="q.itemType === 'Rfi' ? 'message-square-text' : 'clipboard-check'"
+                              [name]="
+                                q.itemType === 'Rfi' ? 'message-square-text' : 'clipboard-check'
+                              "
                               [size]="16"
                             />
                             {{ q.itemType === 'Rfi' ? 'RFI' : 'Submittal' }}
@@ -111,7 +117,9 @@ type Scope = 'me' | 'all' | 'overdue';
                           {{ q.title }}<span class="sub">{{ label(q.discipline) }}</span>
                         </td>
                         <td><app-status [value]="q.state" /></td>
-                        <td><app-person [name]="q.assignee?.displayName" fallback="Unassigned" /></td>
+                        <td>
+                          <app-person [name]="q.assignee?.displayName" fallback="Unassigned" />
+                        </td>
                         <td class="num-cell">
                           @if (q.isOverdue) {
                             <app-status

@@ -59,7 +59,13 @@ export class IconComponent {
         stroke-linecap="round"
         stroke-linejoin="round"
       />
-      <path d="M12 24.5h9" stroke="#fff" stroke-opacity="0.65" stroke-width="2" stroke-linecap="round" />
+      <path
+        d="M12 24.5h9"
+        stroke="#fff"
+        stroke-opacity="0.65"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
     </svg>
     @if (wordmark()) {
       <span class="wordmark">DocRoof</span>
@@ -98,10 +104,10 @@ export class LogoComponent {
 export class StatusChipComponent {
   readonly value = input.required<string | null | undefined>();
   /** Overrides the derived label (e.g. "Overdue 3 d"). */
-  readonly text = input<string | null>(null, { alias: 'label' });
+  readonly label = input<string | null>(null);
   readonly tone = input<string | null>(null);
   protected readonly toneName = computed(() => this.tone() ?? tone(this.value()));
-  protected readonly textValue = computed(() => this.text() ?? label(this.value()));
+  protected readonly textValue = computed(() => this.label() ?? label(this.value()));
 }
 
 export function initials(name: string | null | undefined): string {
@@ -109,7 +115,9 @@ export function initials(name: string | null | undefined): string {
     return '·';
   }
   const parts = name.trim().split(/\s+/);
-  return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? (parts.at(-1)?.[0] ?? '') : '')).toUpperCase();
+  return (
+    (parts[0]?.[0] ?? '') + (parts.length > 1 ? (parts.at(-1)?.[0] ?? '') : '')
+  ).toUpperCase();
 }
 
 @Component({
@@ -126,7 +134,9 @@ export class AvatarComponent {
 @Component({
   selector: 'app-person',
   imports: [AvatarComponent],
-  template: `<app-avatar [name]="name()" /><span class="truncate">{{ name() || fallback() }}</span>`,
+  template: `<app-avatar [name]="name()" /><span class="truncate">{{
+      name() || fallback()
+    }}</span>`,
   host: { class: 'person' },
 })
 export class PersonComponent {
@@ -269,9 +279,7 @@ export class PagerComponent {
   readonly total = input.required<number>();
   readonly ariaLabel = input('Pages');
   readonly pageChange = output<number>();
-  protected readonly pages = computed(() =>
-    Math.max(1, Math.ceil(this.total() / this.pageSize())),
-  );
+  protected readonly pages = computed(() => Math.max(1, Math.ceil(this.total() / this.pageSize())));
   protected readonly from = computed(() =>
     this.total() === 0 ? 0 : (this.page() - 1) * this.pageSize() + 1,
   );

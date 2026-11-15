@@ -69,7 +69,10 @@ export class DocumentRegisterPage {
     'ApprovedWithComments',
     'ReviseAndResubmit',
   ]);
-  protected readonly revisionOptions = ['R0', 'R1', 'R2', 'R3'].map((v) => ({ value: v, label: v }));
+  protected readonly revisionOptions = ['R0', 'R1', 'R2', 'R3'].map((v) => ({
+    value: v,
+    label: v,
+  }));
   protected readonly sortOptions: FilterOption[] = [
     { value: 'number', label: 'Number A–Z' },
     { value: '-number', label: 'Number Z–A' },

@@ -14,7 +14,9 @@
   } @else if (loading() && !view()) {
     <div class="kpis" role="status" aria-label="Loading insights">
       @for (i of [1, 2, 3, 4]; track i) {
-        <div class="card kpi"><span class="skeleton" style="width: 60%"></span><span class="skeleton big"></span></div>
+        <div class="card kpi">
+          <span class="skeleton" style="width: 60%"></span><span class="skeleton big"></span>
+        </div>
       }
     </div>
     <div class="charts">
@@ -68,19 +70,28 @@
           >
             <div class="wk-plot">
               <div class="wk-grid" aria-hidden="true">
-                <span><em>{{ v.weekMax }}</em></span>
-                <span><em>{{ v.weekMax / 2 | number: '1.0-1' }}</em></span>
+                <span
+                  ><em>{{ scale(v) }}</em></span
+                >
+                <span
+                  ><em>{{ scale(v) / 2 }}</em></span
+                >
                 <span><em>0</em></span>
               </div>
               <div class="wk-cols">
                 @for (w of v.weeks; track w.label) {
                   <div class="wk-col">
-                    <span class="bar brand" [style.height.%]="pct(w.opened, v.weekMax)"></span>
-                    <span class="bar grey" [style.height.%]="pct(w.closed, v.weekMax)"></span>
+                    <span class="bar brand" [style.height.%]="pct(w.opened, scale(v))"></span>
+                    <span class="bar grey" [style.height.%]="pct(w.closed, scale(v))"></span>
                   </div>
                 }
               </div>
-              <svg class="wk-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <svg
+                class="wk-line"
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                aria-hidden="true"
+              >
                 <polyline [attr.points]="linePoints(v)" vector-effect="non-scaling-stroke" />
               </svg>
               @for (w of v.weeks; track w.label; let i = $index) {
@@ -88,7 +99,7 @@
                   class="dot"
                   aria-hidden="true"
                   [style.left.%]="dotLeft(i, v)"
-                  [style.bottom.%]="pct(w.openAtEnd, v.weekMax)"
+                  [style.bottom.%]="pct(w.openAtEnd, scale(v))"
                 ></span>
               }
             </div>
@@ -101,7 +112,9 @@
         } @else {
           <div class="table-wrap data">
             <table class="table table-compact">
-              <caption class="visually-hidden">RFIs opened and closed per week</caption>
+              <caption class="visually-hidden">
+                RFIs opened and closed per week
+              </caption>
               <thead>
                 <tr>
                   <th scope="col">Week of</th>
@@ -145,13 +158,24 @@
             @for (b of v.overdueByDiscipline; track b.label) {
               <li>
                 <span class="hb-label">{{ b.label }}</span>
-                <span class="hb-track"><span class="hb-bar danger" [style.width.%]="b.percent"></span></span>
+                <span class="hb-track"
+                  ><span class="hb-bar danger" [style.width.%]="b.percent"></span
+                ></span>
                 <span class="hb-value">{{ b.value }}</span>
               </li>
             }
           </ul>
         } @else {
-          <ng-container *ngTemplateOutlet="barTable; context: { $implicit: v.overdueByDiscipline, title: 'Overdue items by discipline', col: 'Discipline' }" />
+          <ng-container
+            *ngTemplateOutlet="
+              barTable;
+              context: {
+                $implicit: v.overdueByDiscipline,
+                title: 'Overdue items by discipline',
+                col: 'Discipline',
+              }
+            "
+          />
         }
       </figure>
 
@@ -197,7 +221,9 @@
         } @else {
           <div class="table-wrap data">
             <table class="table table-compact">
-              <caption class="visually-hidden">Documents by discipline and status</caption>
+              <caption class="visually-hidden">
+                Documents by discipline and status
+              </caption>
               <thead>
                 <tr>
                   <th scope="col">Discipline</th>
@@ -241,13 +267,20 @@
             @for (b of v.rfisByState; track b.label) {
               <li>
                 <span class="hb-label">{{ b.label }}</span>
-                <span class="hb-track"><span class="hb-bar" [style.width.%]="b.percent"></span></span>
+                <span class="hb-track"
+                  ><span class="hb-bar" [style.width.%]="b.percent"></span
+                ></span>
                 <span class="hb-value">{{ b.value }}</span>
               </li>
             }
           </ul>
         } @else {
-          <ng-container *ngTemplateOutlet="barTable; context: { $implicit: v.rfisByState, title: 'RFIs by state', col: 'State' }" />
+          <ng-container
+            *ngTemplateOutlet="
+              barTable;
+              context: { $implicit: v.rfisByState, title: 'RFIs by state', col: 'State' }
+            "
+          />
         }
       </figure>
 
@@ -269,13 +302,24 @@
             @for (b of v.submittalsByStatus; track b.label) {
               <li>
                 <span class="hb-label">{{ b.label }}</span>
-                <span class="hb-track"><span class="hb-bar" [style.width.%]="b.percent"></span></span>
+                <span class="hb-track"
+                  ><span class="hb-bar" [style.width.%]="b.percent"></span
+                ></span>
                 <span class="hb-value">{{ b.value }}</span>
               </li>
             }
           </ul>
         } @else {
-          <ng-container *ngTemplateOutlet="barTable; context: { $implicit: v.submittalsByStatus, title: 'Submittals by status', col: 'Status' }" />
+          <ng-container
+            *ngTemplateOutlet="
+              barTable;
+              context: {
+                $implicit: v.submittalsByStatus,
+                title: 'Submittals by status',
+                col: 'Status',
+              }
+            "
+          />
         }
       </figure>
     </div>
@@ -285,7 +329,11 @@
 <ng-template #barTable let-rows let-title="title" let-col="col">
   <div class="table-wrap data">
     <table class="table table-compact">
-      <caption class="visually-hidden">{{ title }}</caption>
+      <caption class="visually-hidden">
+        {{
+          title
+        }}
+      </caption>
       <thead>
         <tr>
           <th scope="col">{{ col }}</th>

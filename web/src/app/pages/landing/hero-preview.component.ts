@@ -82,7 +82,9 @@ const NAV: { icon: IconName; label: string }[] = [
         </div>
         <div class="table">
           <div class="filters">
-            <span class="search"><app-icon name="search" [size]="12" /> Search number or title</span>
+            <span class="search"
+              ><app-icon name="search" [size]="12" /> Search number or title</span
+            >
             <span class="fchip">Discipline</span><span class="fchip">Status</span
             ><span class="fchip">Review</span>
           </div>
@@ -94,13 +96,14 @@ const NAV: { icon: IconName; label: string }[] = [
             <span class="num">MCC-M-23 05 00</span>
             <span class="t">Common Work Results for HVAC</span>
             <span><span class="chip tone-success">Issued</span></span>
-            <span class="revs"
-              ><span class="rev">R1</span><span class="rev current">R2</span></span
-            >
+            <span class="revs"><span class="rev">R1</span><span class="rev current">R2</span></span>
             <span>
-              <span class="chip" [class.tone-info]="phase() < 2" [class.tone-success]="phase() >= 2">{{
-                phase() >= 2 ? 'Approved' : 'Pending'
-              }}</span>
+              <span
+                class="chip"
+                [class.tone-info]="phase() < 2"
+                [class.tone-success]="phase() >= 2"
+                >{{ phase() >= 2 ? 'Approved' : 'Pending' }}</span
+              >
             </span>
           </div>
           @for (r of rows; track r.num) {
@@ -108,9 +111,12 @@ const NAV: { icon: IconName; label: string }[] = [
               <span class="num">{{ r.num }}</span>
               <span class="t">{{ r.title }}</span>
               <span
-                ><span class="chip" [class.tone-success]="r.status === 'Issued'" [class.tone-info]="r.status !== 'Issued'">{{
-                  r.status
-                }}</span></span
+                ><span
+                  class="chip"
+                  [class.tone-success]="r.status === 'Issued'"
+                  [class.tone-info]="r.status !== 'Issued'"
+                  >{{ r.status }}</span
+                ></span
               >
               <span class="revs">
                 @for (v of r.revs; track v.label) {

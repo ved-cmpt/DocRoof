@@ -24,7 +24,13 @@ import { IconComponent } from '../../shared/ui';
       <div class="dlg-body form-grid">
         <div class="field">
           <label class="field-label" for="sub-title">Title</label>
-          <input id="sub-title" class="input" formControlName="title" maxlength="300" autocomplete="off" />
+          <input
+            id="sub-title"
+            class="input"
+            formControlName="title"
+            maxlength="300"
+            autocomplete="off"
+          />
           @if (invalid('title')) {
             <p class="field-error">Title is required (at least 3 characters).</p>
           }
@@ -59,7 +65,13 @@ import { IconComponent } from '../../shared/ui';
           </div>
           <div class="field">
             <label class="field-label" for="sub-due">Due date</label>
-            <input id="sub-due" class="input" type="date" formControlName="dueDate" [min]="minDue" />
+            <input
+              id="sub-due"
+              class="input"
+              type="date"
+              formControlName="dueDate"
+              [min]="minDue"
+            />
             @if (invalid('dueDate')) {
               <p class="field-error">Choose a future due date.</p>
             }

@@ -24,7 +24,8 @@ import { IconComponent } from '../shared/ui';
         <section class="tour" aria-label="Guided demo task">
           <header>
             <span class="step-label">
-              Guided tour · {{ tour.current() ? 'step ' + (tour.progress() + 1) + ' of ' + total : 'complete' }}
+              Guided tour ·
+              {{ tour.current() ? 'step ' + (tour.progress() + 1) + ' of ' + total : 'complete' }}
             </span>
             <button
               type="button"
@@ -34,7 +35,12 @@ import { IconComponent } from '../shared/ui';
             >
               <app-icon name="minus" [size]="16" />
             </button>
-            <button type="button" class="btn btn-icon" (click)="tour.close()" aria-label="Close tour">
+            <button
+              type="button"
+              class="btn btn-icon"
+              (click)="tour.close()"
+              aria-label="Close tour"
+            >
               <app-icon name="x" [size]="16" />
             </button>
           </header>
@@ -53,7 +59,9 @@ import { IconComponent } from '../shared/ui';
               <p class="persona">You are {{ session.me()?.displayName }} right now.</p>
             }
             <div class="actions">
-              @if (step.key === 'open-spec' || step.key === 'history' || step.key === 'create-rfi') {
+              @if (
+                step.key === 'open-spec' || step.key === 'history' || step.key === 'create-rfi'
+              ) {
                 <a
                   class="btn btn-secondary btn-sm"
                   [routerLink]="['/app/documents']"

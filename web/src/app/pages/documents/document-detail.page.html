@@ -184,7 +184,9 @@
                       <app-status
                         [value]="c.contentChanged ? 'Changed' : 'Identical'"
                         [tone]="c.contentChanged ? 'info' : 'neutral'"
-                        [label]="c.contentChanged ? 'File content changed' : 'Identical file content'"
+                        [label]="
+                          c.contentChanged ? 'File content changed' : 'Identical file content'
+                        "
                       />
                       <span class="text-2"
                         >Size {{ c.sizeDelta >= 0 ? '+' : '−'

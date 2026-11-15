@@ -1,4 +1,4 @@
-import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, effect, inject, signal, untracked } from '@angular/core';
 import { problemMessage } from '../../core/http';
 import { label } from '../../core/labels';
@@ -20,7 +20,6 @@ type ChartKey = 'weeks' | 'overdue' | 'documents' | 'rfis' | 'submittals';
 @Component({
   selector: 'app-insights',
   imports: [
-    DecimalPipe,
     NgTemplateOutlet,
     TopbarComponent,
     IconComponent,
@@ -81,11 +80,16 @@ export class InsightsPage {
     return max > 0 ? (value / max) * 100 : 0;
   }
 
+  /** Axis maximum rounded up to an even number, so the middle gridline is a whole count. */
+  protected scale(v: InsightsView): number {
+    return Math.max(2, Math.ceil(v.weekMax / 2) * 2);
+  }
+
   /** Polyline for "open at week end", in a 0–100 box stretched over the plot. */
   protected linePoints(v: InsightsView): string {
     const n = Math.max(1, v.weeks.length);
     return v.weeks
-      .map((w, i) => `${((i + 0.5) / n) * 100},${100 - this.pct(w.openAtEnd, v.weekMax)}`)
+      .map((w, i) => `${((i + 0.5) / n) * 100},${100 - this.pct(w.openAtEnd, this.scale(v))}`)
       .join(' ');
   }
 

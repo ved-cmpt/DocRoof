@@ -64,7 +64,6 @@
 
 .chart {
   margin: 0;
-  min-height: 300px;
   display: flex;
   flex-direction: column;
 
@@ -280,7 +279,7 @@
   border-radius: 3px;
 
   &.danger {
-    background: var(--danger);
+    background: color-mix(in srgb, var(--danger) 78%, var(--surface));
   }
 
   &.seg {

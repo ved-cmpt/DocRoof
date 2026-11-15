@@ -287,6 +287,9 @@
 .scrim {
   position: fixed;
   inset: 0;
+  border: 0;
+  padding: 0;
+  cursor: default;
   z-index: 999;
   background: var(--scrim);
 }

@@ -38,14 +38,24 @@
         <h2>{{ r.subject }}</h2>
       </div>
       <div class="head-actions">
-        <app-status class="state-chip" [value]="r.state" data-testid="rfi-state" />
+        <app-status [value]="r.state" data-testid="rfi-state" />
         @if (can('Submit')) {
-          <button type="button" class="btn btn-primary" (click)="run('Submit')" [disabled]="!!busy()">
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="run('Submit')"
+            [disabled]="!!busy()"
+          >
             <app-icon name="send" [size]="16" /> Submit RFI
           </button>
         }
         @if (can('Assign')) {
-          <button type="button" class="btn btn-primary" (click)="openAssign()" [disabled]="!!busy()">
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="openAssign()"
+            [disabled]="!!busy()"
+          >
             <app-icon name="user-check" [size]="16" />
             {{ r.state === 'Assigned' ? 'Reassign' : 'Assign' }}
           </button>
@@ -81,7 +91,12 @@
           </button>
         }
         @if (can('Close')) {
-          <button type="button" class="btn btn-primary" (click)="run('Close')" [disabled]="!!busy()">
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="run('Close')"
+            [disabled]="!!busy()"
+          >
             <app-icon name="check" [size]="16" /> Close RFI
           </button>
         }
@@ -155,7 +170,9 @@
                   ><span class="mono">{{ r.citation.documentNumber }}</span>
                   {{ r.citation.documentTitle }}</span
                 >
-                <span class="cite-where">{{ r.citation.versionLabel }}, page {{ r.citation.page }}</span>
+                <span class="cite-where"
+                  >{{ r.citation.versionLabel }}, page {{ r.citation.page }}</span
+                >
               </span>
               <app-icon name="arrow-right" [size]="16" />
             </a>

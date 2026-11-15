@@ -78,7 +78,11 @@ import {
           </span>
         </div>
         @if (error()) {
-          <app-empty icon="triangle-alert" heading="The audit trail could not be loaded" [text]="error()">
+          <app-empty
+            icon="triangle-alert"
+            heading="The audit trail could not be loaded"
+            [text]="error()"
+          >
             <button type="button" class="btn btn-secondary" (click)="retry()">Try again</button>
           </app-empty>
         } @else if (loading() && !result()) {
@@ -228,7 +232,11 @@ export class AuditPage {
   }
 
   protected set<K extends keyof AuditQuery>(key: K, value: AuditQuery[K]): void {
-    this.query.update((q) => ({ ...q, [key]: value, page: key === 'page' ? (value as number) : 1 }));
+    this.query.update((q) => ({
+      ...q,
+      [key]: value,
+      page: key === 'page' ? (value as number) : 1,
+    }));
   }
 
   protected onAction(value: string): void {

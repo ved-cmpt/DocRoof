@@ -36,7 +36,11 @@ export class LandingPage {
     MEASURED_TESTS.unit + MEASURED_TESTS.integration + MEASURED_TESTS.angular + MEASURED_TESTS.e2e;
 
   protected readonly steps: { icon: IconName; title: string; text: string }[] = [
-    { icon: 'upload', title: 'Upload', text: 'Add a drawing or spec. Every revision keeps its checksum.' },
+    {
+      icon: 'upload',
+      title: 'Upload',
+      text: 'Add a drawing or spec. Every revision keeps its checksum.',
+    },
     {
       icon: 'message-square-text',
       title: 'Ask',

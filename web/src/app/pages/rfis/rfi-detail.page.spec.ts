@@ -85,6 +85,7 @@ describe('RfiDetailPage action visibility', () => {
     expect(labels).not.toContain('Close RFI');
     expect(labels).not.toContain('Post answer');
     expect(labels).not.toContain('Assign');
+    expect(el.querySelector('[data-testid="rfi-state"]')?.textContent?.trim()).toBe('Answered');
   });
 
   it('shows the answer form only to the assignee', async () => {
@@ -95,7 +96,10 @@ describe('RfiDetailPage action visibility', () => {
 
   it('shows no actions and an explanation when the server allows none', async () => {
     const el = await render(rfi('Closed', []));
-    expect(el.querySelector('[data-testid="no-actions"]')).not.toBeNull();
+    const hint = el.querySelector('[data-testid="no-actions"]');
+    expect(hint).not.toBeNull();
+    // The explanation lives in the tooltip and the accessible name, not in body text.
+    expect(hint?.getAttribute('aria-label')).toContain('A project manager can reopen it');
     expect(buttons(el).some((b) => /Approve|Close|Assign|Reopen/.test(b))).toBe(false);
   });
 

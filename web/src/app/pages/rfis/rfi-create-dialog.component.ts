@@ -107,7 +107,9 @@ export interface RfiCreateData {
           @if (invalid('question')) {
             <p class="field-error">Describe the question (at least 10 characters).</p>
           } @else {
-            <span class="field-hint">Quote the clause or detail so the reviewer can answer fast.</span>
+            <span class="field-hint"
+              >Quote the clause or detail so the reviewer can answer fast.</span
+            >
           }
         </div>
         <label class="check">

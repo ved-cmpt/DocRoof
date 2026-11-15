@@ -64,6 +64,8 @@ describe('DocumentRegisterPage', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     http.expectOne((r) => r.url === '/api/projects/p1/documents').flush(data);
+    // The shared top bar loads the notification feed and demo personas for guest sessions.
+    http.match((r) => r.url === '/api/notifications' || r.url === '/api/demo/personas');
     fixture.detectChanges();
     await fixture.whenStable();
     return fixture.nativeElement as HTMLElement;
@@ -84,13 +86,13 @@ describe('DocumentRegisterPage', () => {
   it('hides the upload action from requesters (the server enforces it too)', async () => {
     const el = await render('Requester', page);
     const buttons = Array.from(el.querySelectorAll('button')).map((b) => b.textContent?.trim());
-    expect(buttons).not.toContain('New document');
+    expect(buttons).not.toContain('Upload document');
   });
 
   it('shows the upload action to document controllers', async () => {
     const el = await render('DocumentController', page);
     const buttons = Array.from(el.querySelectorAll('button')).map((b) => b.textContent?.trim());
-    expect(buttons).toContain('New document');
+    expect(buttons).toContain('Upload document');
   });
 
   it('shows an empty state when nothing matches', async () => {

@@ -69,7 +69,9 @@ export interface ResubmitDialogData {
           <label class="field-label" for="resubmit-rev">New revision</label>
           <select id="resubmit-rev" class="select" name="rev" [(ngModel)]="revisionId" required>
             @for (r of data.revisions; track r.id) {
-              <option [value]="r.id">{{ r.versionLabel }}{{ r.isCurrent ? ' (current)' : '' }}</option>
+              <option [value]="r.id">
+                {{ r.versionLabel }}{{ r.isCurrent ? ' (current)' : '' }}
+              </option>
             }
           </select>
           <span class="field-hint">The reviewer is notified and a new due date is set.</span>

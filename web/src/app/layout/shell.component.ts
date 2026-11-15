@@ -22,12 +22,7 @@ import { SessionService } from '../core/session.service';
 import { ToastService } from '../core/toast.service';
 import { WalkthroughService } from '../core/walkthrough.service';
 import { IconName } from '../shared/icons.generated';
-import {
-  AvatarComponent,
-  IconComponent,
-  LogoComponent,
-  RelativeTimePipe,
-} from '../shared/ui';
+import { AvatarComponent, IconComponent, LogoComponent, RelativeTimePipe } from '../shared/ui';
 import { NotificationCenter, ShellState, WorkspaceActions } from './shell.state';
 import { TourComponent } from './tour.component';
 
@@ -52,6 +47,7 @@ interface NavItem {
     RelativeTimePipe,
     TourComponent,
   ],
+  host: { '(document:keydown.escape)': 'onEscape()' },
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
 })
@@ -133,6 +129,12 @@ export class ShellComponent {
       next: (q) => this.queueCount.set(q.length),
       error: () => this.queueCount.set(0),
     });
+  }
+
+  protected onEscape(): void {
+    if (this.shell.drawerOpen()) {
+      this.shell.closeDrawer();
+    }
   }
 
   protected onProject(id: string): void {

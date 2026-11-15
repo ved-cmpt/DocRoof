@@ -2,7 +2,13 @@
 
 <div class="shell" [class.collapsed]="collapsed()" [class.mobile]="mobile()">
   @if (mobile() && shell.drawerOpen()) {
-    <div class="scrim" (click)="shell.closeDrawer()" aria-hidden="true"></div>
+    <button
+      type="button"
+      class="scrim"
+      tabindex="-1"
+      aria-hidden="true"
+      (click)="shell.closeDrawer()"
+    ></button>
   }
 
   <aside
@@ -11,7 +17,6 @@
     [attr.aria-hidden]="mobile() && !shell.drawerOpen() ? 'true' : null"
     [attr.inert]="mobile() && !shell.drawerOpen() ? '' : null"
     [cdkTrapFocus]="mobile() && shell.drawerOpen()"
-    (keydown.escape)="shell.closeDrawer()"
   >
     <div class="side-top">
       <a routerLink="/app/documents" class="brand" aria-label="DocRoof workspace home">

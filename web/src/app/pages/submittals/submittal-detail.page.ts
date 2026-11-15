@@ -82,7 +82,11 @@ const WAITING_ON: Record<SubmittalStatus, string> = {
         </section>
       } @else if (error()) {
         <section class="card">
-          <app-empty icon="triangle-alert" heading="The submittal could not be loaded" [text]="error()">
+          <app-empty
+            icon="triangle-alert"
+            heading="The submittal could not be loaded"
+            [text]="error()"
+          >
             <button type="button" class="btn btn-secondary" (click)="load(id())">Try again</button>
           </app-empty>
         </section>
@@ -115,7 +119,12 @@ const WAITING_ON: Record<SubmittalStatus, string> = {
               </button>
             }
             @if (can('Resubmit')) {
-              <button type="button" class="btn btn-primary" (click)="openResubmit()" [disabled]="busy()">
+              <button
+                type="button"
+                class="btn btn-primary"
+                (click)="openResubmit()"
+                [disabled]="busy()"
+              >
                 <app-icon name="refresh-cw" [size]="16" /> Resubmit
               </button>
             }
@@ -327,40 +336,6 @@ const WAITING_ON: Record<SubmittalStatus, string> = {
     .no-actions {
       display: inline-flex;
       border-radius: var(--r-sm);
-    }
-    .citation {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 14px;
-      border: 1px solid var(--border);
-      border-radius: var(--r-sm);
-      background: var(--surface-subtle);
-      color: var(--text);
-    }
-    .citation:hover {
-      text-decoration: none;
-      border-color: var(--border-strong);
-    }
-    .citation > .icon {
-      color: var(--brand);
-    }
-    .citation > .icon:last-child {
-      color: var(--text-3);
-    }
-    .cite-text {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-width: 0;
-    }
-    .cite-doc {
-      font-weight: 500;
-      overflow-wrap: anywhere;
-    }
-    .cite-where {
-      color: var(--text-2);
-      font-size: var(--fs-13);
     }
     .alert {
       margin-top: 12px;

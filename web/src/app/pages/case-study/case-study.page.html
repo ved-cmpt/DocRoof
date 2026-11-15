@@ -53,10 +53,14 @@
 
       <section id="roles" aria-labelledby="roles-h">
         <h2 id="roles-h">Roles</h2>
-        <p>Roles belong to a project membership, so one person can hold different roles per project.</p>
+        <p>
+          Roles belong to a project membership, so one person can hold different roles per project.
+        </p>
         <div class="table-card">
           <table class="table">
-            <caption class="visually-hidden">Project roles</caption>
+            <caption class="visually-hidden">
+              Project roles
+            </caption>
             <thead>
               <tr>
                 <th scope="col">Role</th>
@@ -66,7 +70,9 @@
             <tbody>
               <tr>
                 <th scope="row">Document Controller</th>
-                <td>Uploads and versions records, coordinates submittals, accepts extracted metadata.</td>
+                <td>
+                  Uploads and versions records, coordinates submittals, accepts extracted metadata.
+                </td>
               </tr>
               <tr>
                 <th scope="row">Project Manager</th>
@@ -90,8 +96,8 @@
         <ul class="checks">
           <li>Document numbers are unique per project; revision labels unique per document.</li>
           <li>
-            Stored revisions never change: the service layer, an EF Core interceptor and a SQL trigger
-            all reject edits.
+            Stored revisions never change: the service layer, an EF Core interceptor and a SQL
+            trigger all reject edits.
           </li>
           <li>Uploads must match an allowed type by their first bytes (PDF, TXT, PNG, JPG).</li>
           <li>
@@ -116,13 +122,21 @@
           <svg viewBox="0 0 720 230" role="img" aria-labelledby="arch-t arch-d">
             <title id="arch-t">DocRoof architecture</title>
             <desc id="arch-d">
-              The Angular app in the browser calls the ASP.NET Core API over HTTPS with a cookie and an
-              antiforgery header. Controllers call services, which use EF Core for SQL Server and a
-              storage abstraction backed by local disk or a SQL table. Background jobs handle guest
-              cleanup and overdue reminders.
+              The Angular app in the browser calls the ASP.NET Core API over HTTPS with a cookie and
+              an antiforgery header. Controllers call services, which use EF Core for SQL Server and
+              a storage abstraction backed by local disk or a SQL table. Background jobs handle
+              guest cleanup and overdue reminders.
             </desc>
             <defs>
-              <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <marker
+                id="arr"
+                viewBox="0 0 10 10"
+                refX="9"
+                refY="5"
+                markerWidth="7"
+                markerHeight="7"
+                orient="auto"
+              >
                 <path d="M0 1 9 5 0 9z" class="arrow" />
               </marker>
             </defs>
@@ -133,16 +147,22 @@
             <rect x="210" y="16" width="260" height="198" rx="12" class="node key" />
             <text x="340" y="44" class="lbl" text-anchor="middle">ASP.NET Core (.NET 10)</text>
             <rect x="230" y="60" width="220" height="34" rx="8" class="inner" />
-            <text x="340" y="82" class="sub" text-anchor="middle">Auth · antiforgery · rate limits</text>
+            <text x="340" y="82" class="sub" text-anchor="middle">
+              Auth · antiforgery · rate limits
+            </text>
             <rect x="230" y="102" width="220" height="34" rx="8" class="inner" />
-            <text x="340" y="124" class="sub" text-anchor="middle">Controllers → services · audit</text>
+            <text x="340" y="124" class="sub" text-anchor="middle">
+              Controllers → services · audit
+            </text>
             <rect x="230" y="144" width="220" height="34" rx="8" class="inner" />
             <text x="340" y="166" class="sub" text-anchor="middle">EF Core · file storage</text>
             <text x="340" y="200" class="sub" text-anchor="middle">Cleanup and reminder jobs</text>
 
             <rect x="540" y="30" width="172" height="70" rx="10" class="node" />
             <text x="626" y="60" class="lbl" text-anchor="middle">SQL Server 2022</text>
-            <text x="626" y="80" class="sub" text-anchor="middle">constraints · triggers · view</text>
+            <text x="626" y="80" class="sub" text-anchor="middle">
+              constraints · triggers · view
+            </text>
             <rect x="540" y="130" width="172" height="70" rx="10" class="node" />
             <text x="626" y="160" class="lbl" text-anchor="middle">File storage</text>
             <text x="626" y="180" class="sub" text-anchor="middle">disk or SQL varbinary</text>
@@ -161,25 +181,40 @@
           <svg viewBox="0 0 720 270" role="img" aria-labelledby="dm-t dm-d">
             <title id="dm-t">Core data model</title>
             <desc id="dm-d">
-              A tenant owns projects and users. Memberships give users a role per project. Projects have
-              documents, RFIs, submittals, comments and audit events. Documents have immutable
+              A tenant owns projects and users. Memberships give users a role per project. Projects
+              have documents, RFIs, submittals, comments and audit events. Documents have immutable
               revisions, one current. RFIs cite one revision and page and have responses. Submittals
               point at a revision and have one decision per cycle. Revisions have extraction
               suggestions.
             </desc>
             <g class="er">
-              <rect x="10" y="20" width="120" height="40" rx="8" class="node" /><text x="70" y="45" class="lbl" text-anchor="middle">Tenant</text>
-              <rect x="10" y="120" width="120" height="40" rx="8" class="node" /><text x="70" y="145" class="lbl" text-anchor="middle">User</text>
-              <rect x="180" y="20" width="140" height="40" rx="8" class="node" /><text x="250" y="45" class="lbl" text-anchor="middle">Project</text>
-              <rect x="180" y="120" width="140" height="40" rx="8" class="node" /><text x="250" y="145" class="lbl" text-anchor="middle">Membership · role</text>
-              <rect x="370" y="20" width="150" height="40" rx="8" class="node" /><text x="445" y="45" class="lbl" text-anchor="middle">Document</text>
-              <rect x="370" y="112" width="150" height="56" rx="8" class="node key" /><text x="445" y="136" class="lbl" text-anchor="middle">DocumentRevision</text><text x="445" y="154" class="sub" text-anchor="middle">immutable · SHA-256</text>
-              <rect x="570" y="120" width="140" height="40" rx="8" class="node" /><text x="640" y="145" class="lbl" text-anchor="middle">Suggestion</text>
-              <rect x="570" y="20" width="140" height="40" rx="8" class="node" /><text x="640" y="45" class="lbl" text-anchor="middle">AuditEvent</text>
-              <rect x="370" y="216" width="150" height="40" rx="8" class="node" /><text x="445" y="241" class="lbl" text-anchor="middle">RFI → Response</text>
-              <rect x="570" y="216" width="140" height="40" rx="8" class="node" /><text x="640" y="241" class="lbl" text-anchor="middle">Submittal → Decision</text>
-              <rect x="180" y="216" width="140" height="40" rx="8" class="node" /><text x="250" y="241" class="lbl" text-anchor="middle">Comment</text>
-              <path d="M130 40h50M70 60v60M130 140h50M250 60v60M320 40h50M445 60v52M520 140h50M445 168v48M520 40h50M590 160v56" class="edge" />
+              <rect x="10" y="20" width="120" height="40" rx="8" class="node" />
+              <text x="70" y="45" class="lbl" text-anchor="middle">Tenant</text>
+              <rect x="10" y="120" width="120" height="40" rx="8" class="node" />
+              <text x="70" y="145" class="lbl" text-anchor="middle">User</text>
+              <rect x="180" y="20" width="140" height="40" rx="8" class="node" />
+              <text x="250" y="45" class="lbl" text-anchor="middle">Project</text>
+              <rect x="180" y="120" width="140" height="40" rx="8" class="node" />
+              <text x="250" y="145" class="lbl" text-anchor="middle">Membership · role</text>
+              <rect x="370" y="20" width="150" height="40" rx="8" class="node" />
+              <text x="445" y="45" class="lbl" text-anchor="middle">Document</text>
+              <rect x="370" y="112" width="150" height="56" rx="8" class="node key" />
+              <text x="445" y="136" class="lbl" text-anchor="middle">DocumentRevision</text>
+              <text x="445" y="154" class="sub" text-anchor="middle">immutable · SHA-256</text>
+              <rect x="570" y="120" width="140" height="40" rx="8" class="node" />
+              <text x="640" y="145" class="lbl" text-anchor="middle">Suggestion</text>
+              <rect x="570" y="20" width="140" height="40" rx="8" class="node" />
+              <text x="640" y="45" class="lbl" text-anchor="middle">AuditEvent</text>
+              <rect x="370" y="216" width="150" height="40" rx="8" class="node" />
+              <text x="445" y="241" class="lbl" text-anchor="middle">RFI → Response</text>
+              <rect x="570" y="216" width="140" height="40" rx="8" class="node" />
+              <text x="640" y="241" class="lbl" text-anchor="middle">Submittal → Decision</text>
+              <rect x="180" y="216" width="140" height="40" rx="8" class="node" />
+              <text x="250" y="241" class="lbl" text-anchor="middle">Comment</text>
+              <path
+                d="M130 40h50M70 60v60M130 140h50M250 60v60M320 40h50M445 60v52M520 140h50M445 168v48M520 40h50M590 160v56"
+                class="edge"
+              />
               <text x="455" y="196" class="tiny">cites revision + page</text>
             </g>
           </svg>
@@ -193,10 +228,22 @@
       <section id="security" aria-labelledby="security-h">
         <h2 id="security-h">Security</h2>
         <ul class="checks">
-          <li><strong>Same-origin cookies</strong> (HttpOnly, Secure, SameSite=Strict) plus antiforgery on every unsafe request.</li>
-          <li><strong>Object-level checks</strong> in services: tenant membership and project role on every call.</li>
-          <li><strong>Upload hygiene:</strong> magic-byte allow-list, size limits, generated storage keys, active-content PDFs download-only.</li>
-          <li><strong>Untrusted text:</strong> extraction can only create suggestions; a seeded prompt-injection PDF proves it in a test.</li>
+          <li>
+            <strong>Same-origin cookies</strong> (HttpOnly, Secure, SameSite=Strict) plus
+            antiforgery on every unsafe request.
+          </li>
+          <li>
+            <strong>Object-level checks</strong> in services: tenant membership and project role on
+            every call.
+          </li>
+          <li>
+            <strong>Upload hygiene:</strong> magic-byte allow-list, size limits, generated storage
+            keys, active-content PDFs download-only.
+          </li>
+          <li>
+            <strong>Untrusted text:</strong> extraction can only create suggestions; a seeded
+            prompt-injection PDF proves it in a test.
+          </li>
           <li><strong>Abuse controls:</strong> rate limits, lockout, demo and upload quotas.</li>
           <li><strong>Headers:</strong> CSP, HSTS in production, frame-ancestors none, nosniff.</li>
         </ul>
@@ -205,17 +252,28 @@
       <section id="testing" aria-labelledby="testing-h">
         <h2 id="testing-h">Testing</h2>
         <div class="stats">
-          <div><span class="n">{{ counts.unit }}</span><span>backend unit</span></div>
-          <div><span class="n">{{ counts.integration }}</span><span>integration on real SQL Server</span></div>
-          <div><span class="n">{{ counts.angular }}</span><span>Angular unit</span></div>
-          <div><span class="n">{{ counts.e2e }}</span><span>Playwright end-to-end</span></div>
+          <div>
+            <span class="n">{{ counts.unit }}</span><span>backend unit</span>
+          </div>
+          <div>
+            <span class="n">{{ counts.integration }}</span><span
+              >integration on real SQL Server</span
+            >
+          </div>
+          <div>
+            <span class="n">{{ counts.angular }}</span><span>Angular unit</span>
+          </div>
+          <div>
+            <span class="n">{{ counts.e2e }}</span><span>Playwright end-to-end</span>
+          </div>
         </div>
         <p>
-          Workflow rules are unit tested for every state and action. Integration tests run SQL Server
-          2022 in Docker through the real HTTP pipeline: cross-tenant 404s, wrong-role 403s, stale
-          rowversions, rollback on injected faults, the immutability trigger, upload rejection, rate
-          limits and antiforgery on every unsafe endpoint. Playwright covers the guided scenario,
-          reset, mobile, keyboard-only use and axe accessibility checks. Counts are from the run on
+          Workflow rules are unit tested for every state and action. Integration tests run SQL
+          Server 2022 in Docker through the real HTTP pipeline: cross-tenant 404s, wrong-role 403s,
+          stale rowversions, rollback on injected faults, the immutability trigger, upload
+          rejection, rate limits and antiforgery on every unsafe endpoint. Playwright covers the
+          guided scenario, reset, mobile, keyboard-only use and axe accessibility checks. Counts are
+          from the run on
           {{ counts.date }}.
         </p>
       </section>
@@ -226,21 +284,35 @@
           <svg viewBox="0 0 720 130" role="img" aria-labelledby="dep-t dep-d">
             <title id="dep-t">Deployment</title>
             <desc id="dep-d">
-              Visitors reach one container on a free web service over HTTPS. It serves the Angular app
-              and the API from one origin and connects over TLS to an Azure SQL Database free-offer
-              instance that stores data and uploaded files.
+              Visitors reach one container on a free web service over HTTPS. It serves the Angular
+              app and the API from one origin and connects over TLS to an Azure SQL Database
+              free-offer instance that stores data and uploaded files.
             </desc>
             <defs>
-              <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <marker
+                id="arr2"
+                viewBox="0 0 10 10"
+                refX="9"
+                refY="5"
+                markerWidth="7"
+                markerHeight="7"
+                orient="auto"
+              >
                 <path d="M0 1 9 5 0 9z" class="arrow" />
               </marker>
             </defs>
             <rect x="8" y="35" width="120" height="60" rx="10" class="node" />
             <text x="68" y="70" class="lbl" text-anchor="middle">Visitor</text>
             <rect x="210" y="20" width="280" height="90" rx="12" class="node key" />
-            <text x="350" y="52" class="lbl" text-anchor="middle">One container (free web service)</text>
-            <text x="350" y="74" class="sub" text-anchor="middle">API + Angular build · one origin</text>
-            <text x="350" y="92" class="sub" text-anchor="middle">migrations on start · /health/ready</text>
+            <text x="350" y="52" class="lbl" text-anchor="middle">
+              One container (free web service)
+            </text>
+            <text x="350" y="74" class="sub" text-anchor="middle">
+              API + Angular build · one origin
+            </text>
+            <text x="350" y="92" class="sub" text-anchor="middle">
+              migrations on start · /health/ready
+            </text>
             <rect x="560" y="30" width="152" height="70" rx="10" class="node" />
             <text x="636" y="60" class="lbl" text-anchor="middle">Azure SQL</text>
             <text x="636" y="80" class="sub" text-anchor="middle">free offer · files in DB</text>
@@ -251,8 +323,9 @@
           </svg>
         </figure>
         <p>
-          The image, Render blueprint, Azure SQL Bicep template and smoke scripts are in the repository,
-          and the image passes the smoke test locally. <strong>Hosted deployment: not complete.</strong>
+          The image, Render blueprint, Azure SQL Bicep template and smoke scripts are in the
+          repository, and the image passes the smoke test locally.
+          <strong>Hosted deployment: not complete.</strong>
         </p>
       </section>
 

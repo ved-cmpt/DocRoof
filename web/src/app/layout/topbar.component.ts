@@ -160,7 +160,9 @@ export class NotificationBellComponent {
           <div class="demo-pill" role="status">
             <span class="pill-dot" aria-hidden="true"></span>
             <span class="pill-text"
-              >Demo workspace<span class="pill-extra"> · resets in {{ actions.expiresIn() }}</span></span
+              >Demo workspace<span class="pill-extra">
+                · resets in {{ actions.expiresIn() }}</span
+              ></span
             >
             <button
               type="button"
