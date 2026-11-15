@@ -9,10 +9,10 @@ flowchart LR
   end
   subgraph API["ASP.NET Core API (.NET 10)"]
     MW["Middleware<br/>security headers · auth cookie ·<br/>rate limiter · ProblemDetails"]
-    C["Controllers<br/>Auth · Demo · Projects · Documents"]
+    C["Controllers<br/>Auth · Demo · Projects · Documents ·<br/>RFIs · Submittals · Activity · Extraction"]
     AF["Antiforgery filter<br/>(all unsafe methods)"]
-    S["Services<br/>ProjectAccess (membership + role) ·<br/>Documents · Projects · Demo · AuditWriter"]
-    BG["Hosted services<br/>DatabaseInitializer · GuestCleanup"]
+    S["Services<br/>ProjectAccess (membership + role) · Documents ·<br/>Rfi / Submittal workflows · Comments · Audit ·<br/>ReviewQueue · Insights · Notifications · Extraction · Demo"]
+    BG["Hosted services<br/>DatabaseInitializer · GuestCleanup ·<br/>OverdueReminders"]
     EF["EF Core DbContext<br/>+ ImmutabilityInterceptor"]
     FS["IFileStorage<br/>LocalDisk | Database"]
   end
@@ -58,7 +58,8 @@ flowchart LR
 
 ## Frontend
 
-- Routes: `/` landing, `/case-study`, `/login`, `/demo`, `/app/documents`, `/app/documents/:id`, 403/404 pages.
+- Routes: `/` landing, `/case-study`, `/login`, `/demo`, `/app/documents`, `/app/documents/:id`, `/app/rfis`,
+  `/app/rfis/:id`, `/app/submittals`, `/app/submittals/:id`, `/app/insights`, `/app/audit`, 403/404 pages.
 - `SessionService` holds the signed-in identity (signals) and refreshes the antiforgery token whenever the identity
   changes; `authGuard` protects `/app`.
 - `errorInterceptor` turns ProblemDetails into toasts unless a call opts out with the `SILENT_ERRORS` context token.
@@ -113,6 +114,21 @@ event.
 | `DatabaseInitializer` | startup | migrations + idempotent sample seed (when enabled) |
 | `GuestCleanupService` | `Demo:CleanupIntervalMinutes` (15) | purges expired guest tenants and their files |
 | `OverdueReminderService` | `Reminders:IntervalMinutes` (60) | reads `vw_ReviewQueue`, inserts one `Overdue` notification per item, assignee and UTC day (unique `DedupeKey`), up to `Reminders:MaxAttempts` (3) attempts with exponential back-off, failures logged |
+
+## Extraction
+
+`IExtractionEngine` has two implementations: `RulesExtractionEngine` (default, deterministic, labelled
+"Rules-based extraction") and the optional `LanguageModelExtractionEngine` (disabled unless configured). Engines get
+page text only and return proposals; `ExtractionService` stores them as suggestions and is the only code that can
+apply an accepted value to a document. Details: docs/EXTRACTION.md.
+
+## Production hosting
+
+One image (`Dockerfile`) contains the published API and the Angular build in `wwwroot`. ASP.NET Core serves static
+files (hashed assets cached for a year, `index.html` no-cache, Brotli/Gzip compression for static assets only), maps
+the API and health checks, and falls back to `index.html` for client routes while unknown `/api/*` paths return a
+ProblemDetails 404. Behind a proxy, `ForwardedHeaders:Enabled` restores the client IP and HTTPS scheme. See
+docs/DEPLOYMENT.md.
 
 ## Guided demo task
 

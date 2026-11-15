@@ -118,4 +118,14 @@ state) → rowversion (409) → change + audit event + notifications in one tran
 | `GET /api/notifications` | caller's unread count and latest 30 |
 | `POST /api/notifications/{id}/read` · `POST /api/notifications/read-all` | only the recipient can mark a notification (404 otherwise) |
 
-Extraction endpoints are added in Phase 3.
+## Extraction
+
+| Method & path | Who | Notes |
+| --- | --- | --- |
+| `GET /api/document-revisions/{id}/extract-suggestions` | members | `{ status: NotRun|Ready|NoTextLayer|Unsupported, engineLabel, message, canRun, suggestions[] }`; each suggestion has `field`, `proposedValue`, `page`, `snippet`, `confidence`, `rule`, `engine`, `status`, `currentValue`, `rowVersion` |
+| `POST /api/document-revisions/{id}/extract-suggestions` | DC, PM | runs extraction once per revision (idempotent), rate-limited; only creates Pending suggestions |
+| `POST /api/extraction-suggestions/{id}/accept` | DC, PM | `{ rowVersion }`; applies the value to the document through an audited path; already decided → 409 |
+| `POST /api/extraction-suggestions/{id}/reject` | DC, PM | `{ rowVersion }` |
+
+Document detail responses also include `issueDate` and `specSection` (set by accepted suggestions). See
+docs/EXTRACTION.md.

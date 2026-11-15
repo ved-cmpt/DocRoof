@@ -1,21 +1,40 @@
 # Owner-only actions
 
-These steps need the repository owner's accounts or approval. Nothing here has been done automatically.
+These steps need the repository owner's accounts, money decisions or judgement. **None of them has been done.**
 
 ## 1. Publish the repository on GitHub
 
 ```powershell
-# create an empty repository named DocRoof on github.com first (no README/licence), then:
+# Create an empty repository named DocRoof on github.com first (no README, licence or .gitignore), then:
 git remote add origin https://github.com/<your-user>/DocRoof.git
 git push -u origin main
 ```
 
-After the first push, open the **Actions** tab and confirm the `ci` workflow runs. The integration tests use
-Testcontainers, which works on GitHub's ubuntu runners without extra setup.
+Then open the **Actions** tab and check the `ci` workflow. Integration tests use Testcontainers, which works on
+GitHub's ubuntu runners without extra setup. Dependabot (monthly, grouped, max 2 open PRs per ecosystem) starts
+automatically from `.github/dependabot.yml`.
 
 ## 2. Set the GitHub link on the site
 
-The landing page footer links to `https://github.com/` as a placeholder. Replace it with the repository URL in
-`web/src/app/shared/brand.ts` (search for "link set by owner").
+Edit `web/src/app/shared/site.ts`:
 
-Deployment steps (Azure SQL free offer + Render) are added in Phase 3.
+```ts
+export const GITHUB_URL = 'https://github.com/<your-user>/DocRoof';
+```
+
+It is used by the landing footer and the case study.
+
+## 3. Deploy (free tier) — optional, needs accounts
+
+Follow docs/DEPLOYMENT.md:
+
+1. Create the Azure SQL Database **free offer** (portal or `infra/azure/sql-free.bicep`). Confirm the free offer is
+   applied and that the limit behaviour is **auto-pause**, so it cannot bill.
+2. Create the Render **Blueprint** from `infra/render.yaml` and paste the connection string as a secret.
+3. Run `./scripts/smoke.sh https://<service>.onrender.com` (or `smoke.ps1`).
+4. Record the URL and the real smoke output in docs/STATUS.md and mark deployment complete there.
+
+## 4. Optional decisions
+
+- Language-model extraction stays disabled unless you choose a provider and set the `Extraction__*` variables
+  (docs/EXTRACTION.md). It may cost money; keep the daily quota small.

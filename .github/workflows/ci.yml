@@ -18,8 +18,41 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
+  changes:
+    name: Detect changed areas
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      docker: ${{ steps.filter.outputs.docker }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'api/**'
+              - 'tests/**'
+              - 'Directory.Build.props'
+              - 'dotnet-tools.json'
+              - '.editorconfig'
+              - '.github/workflows/ci.yml'
+            frontend:
+              - 'web/**'
+              - '.github/workflows/ci.yml'
+            docker:
+              - 'Dockerfile'
+              - '.dockerignore'
+              - 'docker-compose.yml'
+              - 'api/**'
+              - 'web/**'
+              - '.github/workflows/ci.yml'
+
   backend:
-    name: Backend (build, format, unit + integration tests)
+    name: Backend (format, build, unit + integration tests)
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,6 +64,7 @@ jobs:
       - run: dotnet build api/DocRoof.slnx --no-restore -c Release
       # Integration tests start SQL Server 2022 with Testcontainers (Docker is available on ubuntu runners).
       - run: dotnet test api/DocRoof.slnx --no-build -c Release --logger "trx;LogFilePrefix=results" --results-directory TestResults
+      - run: dotnet list api/DocRoof.slnx package --vulnerable --include-transitive
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -38,7 +72,9 @@ jobs:
           path: TestResults
 
   frontend:
-    name: Frontend (lint, format, test, build)
+    name: Frontend (lint, format, test, build, audit)
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -55,13 +91,18 @@ jobs:
       - run: npm run format:check
       - run: npm test -- --watch=false
       - run: npm run build
+      - run: npm audit --omit=dev
 
   e2e:
-    name: End-to-end (Playwright smoke)
+    name: End-to-end (Playwright)
+    needs: [changes, backend, frontend]
+    if: >-
+      always() && !cancelled() &&
+      (needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch') &&
+      !contains(needs.*.result, 'failure')
     runs-on: ubuntu-latest
-    needs: [backend, frontend]
     env:
-      MSSQL_SA_PASSWORD: ${{ secrets.CI_MSSQL_SA_PASSWORD || 'DocRoof_CI_Only_2026!' }}
+      MSSQL_SA_PASSWORD: DocRoof_CI_Only_2026!
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -82,7 +123,7 @@ jobs:
       - name: Start API
         env:
           ASPNETCORE_ENVIRONMENT: Development
-          ConnectionStrings__DocRoof: Server=127.0.0.1,14330;Database=DocRoof;User Id=sa;Password=${{ env.MSSQL_SA_PASSWORD }};TrustServerCertificate=True;Encrypt=True
+          ConnectionStrings__DocRoof: Server=127.0.0.1,14330;Database=DocRoof;User Id=sa;Password=DocRoof_CI_Only_2026!;TrustServerCertificate=True;Encrypt=True
         run: |
           dotnet run --project api/src/DocRoof.Api --launch-profile http > api.log 2>&1 &
           for i in $(seq 1 90); do curl -sf http://localhost:5180/health/ready && break; sleep 2; done
@@ -96,7 +137,7 @@ jobs:
         run: |
           npx ng serve --port 4210 > ../web.log 2>&1 &
           for i in $(seq 1 90); do curl -sf http://localhost:4210 > /dev/null && break; sleep 2; done
-      - name: Playwright
+      - name: Playwright (smoke, guided scenario, reset, accessibility, mobile, keyboard, extraction)
         working-directory: web
         run: npx playwright test --project=chromium
       - uses: actions/upload-artifact@v4
@@ -109,12 +150,33 @@ jobs:
             api.log
             web.log
 
+  docker:
+    name: Docker image build + container smoke
+    needs: changes
+    if: needs.changes.outputs.docker == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      MSSQL_SA_PASSWORD: DocRoof_CI_Only_2026!
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start the production image with SQL Server
+        run: docker compose --profile app up -d --build
+      - name: Wait for readiness
+        run: for i in $(seq 1 90); do curl -sf http://localhost:5180/health/ready && break; sleep 2; done
+      - name: Smoke test
+        run: ./scripts/smoke.sh http://localhost:5180
+      - name: Logs on failure
+        if: failure()
+        run: docker compose --profile app logs app
+
   ci-ok:
     name: ci-ok
     runs-on: ubuntu-latest
-    needs: [backend, frontend, e2e]
+    needs: [changes, backend, frontend, e2e, docker]
     if: always()
     steps:
-      - name: All required jobs passed
+      - name: All required jobs passed or were skipped by path filters
         run: |
-          [ "${{ needs.backend.result }}" = "success" ] && [ "${{ needs.frontend.result }}" = "success" ] && [ "${{ needs.e2e.result }}" = "success" ]
+          for r in "${{ needs.changes.result }}" "${{ needs.backend.result }}" "${{ needs.frontend.result }}" "${{ needs.e2e.result }}" "${{ needs.docker.result }}"; do
+            if [ "$r" != "success" ] && [ "$r" != "skipped" ]; then echo "A required job ended with: $r"; exit 1; fi
+          done

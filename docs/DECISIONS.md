@@ -83,3 +83,30 @@ never create duplicates.
 ## ADR-016 — Development-only demo quota
 `appsettings.Development.json` raises the per-IP guest-workspace quota (500/hour) so local and CI end-to-end runs
 are not blocked; the production default remains 5 per hour per address.
+
+## ADR-017 — Extraction behind `IExtractionEngine`; rules by default
+The deterministic rules engine needs no keys, costs nothing and is honest about what it is. A language-model adapter
+can be plugged in through configuration, but it is optional, quota-limited, validated against the page text and
+falls back to rules. Accepted values are applied by `ExtractionService` only, with an audit event.
+
+## ADR-018 — `Document.IssueDate` and `Document.SpecSection` added in Phase 3
+Accepting date and spec-section suggestions needs somewhere to store them. A small additive migration
+(`DocumentIssueDateAndSpecSection`) was preferred over a free-form metadata table.
+
+## ADR-019 — pdf.js upgraded to 6.x
+`npm audit --omit=dev` reported GHSA-hq66-cqwq-w95j for pdfjs-dist 5.x (high). Version 6.5.438 fixes it. In 6.x the
+document proxy no longer has `destroy()`; the preview now keeps and destroys the loading task (the regression was
+caught by the Playwright guided scenario).
+
+## ADR-020 — Critical-CSS inlining disabled in production builds
+Angular inlines critical CSS with an `onload` handler that the strict `script-src 'self'` CSP blocks, which would
+leave the main stylesheet in `media="print"`. Found by Lighthouse ("errors in console") on the production image;
+`inlineCritical: false` keeps the CSP strict.
+
+## ADR-021 — Response compression for static assets only
+Brotli/Gzip apply to HTML, CSS, JS and SVG. API JSON is not compressed because some responses carry antiforgery
+tokens (BREACH-style attacks rely on compressing secrets next to attacker-controlled input).
+
+## ADR-022 — Guest upload quota
+Each guest workspace may upload at most 30 files / 60 MB (configurable) on top of the seed data, so one visitor
+cannot exhaust a free database.

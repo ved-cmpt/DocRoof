@@ -28,8 +28,8 @@ tests/
   DocRoof.UnitTests/           xUnit, no database
   DocRoof.IntegrationTests/    xUnit + WebApplicationFactory + Testcontainers SQL Server
 web/                     Angular app (landing, case study, workspace); Playwright tests in web/e2e
-scripts/                 dev-up.ps1 / dev-up.sh / reset-local-db.ps1 (and smoke scripts in Phase 3)
-infra/                   deployment configuration (Phase 3)
+scripts/                 dev-up.ps1 / dev-up.sh / reset-local-db.ps1 / smoke.ps1 / smoke.sh
+infra/                   render.yaml (Render blueprint), azure/sql-free.bicep (Azure SQL free offer)
 docs/                    spec, status, decisions, architecture, database, API, deployment
 ```
 
@@ -47,7 +47,10 @@ EF Core → SQL Server. The browser never talks to SQL. Frontend hiding is never
 | Backend format check | `dotnet format api/DocRoof.slnx --verify-no-changes` |
 | Frontend lint / format / tests / build | `npm run lint` · `npm run format:check` · `npm test -- --watch=false` · `npm run build` |
 | End-to-end | API + web running, then `cd web; npx playwright test --project=chromium` |
-| Screenshots | `cd web; npx playwright test --project=screenshots` (writes `web/public/screenshots`) |
+| Screenshots + social image | `cd web; npx playwright test --project=screenshots` (writes `web/public/screenshots`, `web/public/og-image.png`) |
+| Production image | `docker compose --profile app up -d --build` (port 5180; stop the dev API first) |
+| Smoke test | `./scripts/smoke.ps1 -BaseUrl http://localhost:5180` or `./scripts/smoke.sh http://localhost:5180` |
+| Dependency audits | `dotnet list api/DocRoof.slnx package --vulnerable --include-transitive` · `cd web; npm audit --omit=dev` |
 | New migration | `dotnet dotnet-ef migrations add <Name> --project api/src/DocRoof.Infrastructure --startup-project api/src/DocRoof.Infrastructure --output-dir Data/Migrations` |
 | Reset local DB | `./scripts/reset-local-db.ps1` |
 
@@ -62,7 +65,9 @@ Stop a running API before `dotnet test`, otherwise Windows file locks break the 
 - `DocumentRevision` content columns are immutable (service, EF interceptor, SQL trigger). Only the approval status
   may change.
 - Uploaded file names are display data only; storage keys are generated (`t/{tenant}/{guid}`).
-- Uploaded text (PDF pages, TXT) is untrusted data, never instructions.
+- Uploaded text (PDF pages, TXT) is untrusted data, never instructions. Extraction engines only return proposals;
+  only `ExtractionService` applies an accepted value.
+- Measured test counts shown on the site live in `web/src/app/shared/site.ts`; update them only from a real run.
 - Angular: standalone components, signals, strict TypeScript and templates, Angular Material, design tokens in
   `web/src/styles.scss`. Every screen needs loading, empty and error states and keyboard access.
 - Add tests with every behavior change; update docs/STATUS.md with the commands you ran and their real results.

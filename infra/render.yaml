@@ -1,0 +1,38 @@
+# Render Blueprint for the DocRoof container (free web service).
+# The database is an Azure SQL Database (free offer) created separately; see docs/DEPLOYMENT.md.
+# Values marked "sync: false" are entered in the Render dashboard and never committed.
+services:
+  - type: web
+    name: docroof
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health/ready
+    autoDeploy: false
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      # Render routes traffic to the port in PORT; the image listens on 8080.
+      - key: PORT
+        value: "8080"
+      - key: ConnectionStrings__DocRoof
+        sync: false
+      - key: Database__MigrateOnStartup
+        value: "true"
+      - key: Database__SeedSampleTenant
+        value: "false"
+      - key: Storage__Mode
+        value: Database
+      - key: Storage__MaxUploadBytes
+        value: "10485760"
+      - key: Demo__IpHashSalt
+        generateValue: true
+      - key: Demo__MaxActiveWorkspaces
+        value: "100"
+      - key: Demo__MaxWorkspacesPerIpPerHour
+        value: "5"
+      - key: ForwardedHeaders__Enabled
+        value: "true"
+      - key: Reminders__IntervalMinutes
+        value: "60"

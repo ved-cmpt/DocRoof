@@ -1,12 +1,16 @@
 # Status
 
-Last updated: 2026-11-15 (Phase 2 complete).
+Last updated: 2026-11-15 — **all three phases implemented and verified locally. Hosted deployment: NOT COMPLETE**
+(needs the owner's accounts; see [OWNER_TODO.md](OWNER_TODO.md)).
 
 ## Phase checklist
 
-- [x] **Phase 1 — Foundation + vertical slice**
-- [x] **Phase 2 — Domain workflows** (RFIs, submittals, comments, audit, insights, reminders, notifications)
-- [ ] Phase 3 — Extraction, hardening, presentation, deployment readiness
+- [x] **Phase 1 — Foundation + vertical slice** (commits `acf63a6`, `4cfd2c6`, `23e731b`)
+- [x] **Phase 2 — Domain workflows** (commits `46a1f2c`, `e2ef1dd`)
+- [x] **Phase 3 — Hardening, presentation, deployment readiness** (this commit set)
+- [ ] Hosted deployment — **not done**: no cloud accounts were available. Image, `infra/render.yaml`,
+  `infra/azure/sql-free.bicep`, docs/DEPLOYMENT.md and smoke scripts are ready.
+- [ ] CI on GitHub — **never run**: no remote exists yet. The workflow was written and its steps were run locally.
 
 ## Toolchain (inspected 2026-11-15)
 
@@ -18,105 +22,90 @@ Last updated: 2026-11-15 (Phase 2 complete).
 | Docker | 29.6.2 (Docker Desktop running) |
 | Git | 2.55.0.windows.2 |
 
-No tools had to be installed. Playwright's Chromium was installed with `npx playwright install chromium`.
+No tools had to be installed with winget. Playwright Chromium (`npx playwright install chromium`), Lighthouse 12.8.2
+(`npx`) and the `dotnet-ef` local tool were fetched by their package managers.
 
-## What works (Phase 2, verified)
+## What works (verified)
 
-- Phase 2 baseline: the Phase 1 suite (45 unit, 20 integration, 9 Angular, 1 e2e) was green on the Phase 1 commit;
-  nothing was marked broken.
-- RFI state machine (Draft → Submitted → Assigned → Answered → Closed → Reopened → Assigned, reject answer →
-  Assigned) in one pure domain function and one service transition path: membership 404, role 403, invalid
-  state/duplicate approval 409, stale rowversion 409, then change + audit (before/after JSON) + notifications in one
-  transaction. Citations validated (same project, page in range) and pinned; "newer revision exists" flag.
-- Submittal state machine with one decision per cycle (also a unique index), comments required unless Approved,
-  finalize, Revise & Resubmit with a newer revision (cycle + 1); revision approval status updated through an audited
-  path.
-- Comments with optional page citations on documents, RFIs and submittals; project audit endpoint with filters and
-  paging; per-resource timelines.
-- Review queue endpoint reading `vw_ReviewQueue`; `OverdueReminderService` with configurable interval, bounded
-  retries and DB-enforced idempotency; notification bell with unread count, mark-read and mark-all.
-- Live insights endpoint + `/app/insights` SVG charts with data-table text alternatives.
-- Angular: RFI list (state, assignee, due, discipline, search filters) and detail (citation card, answers, role-aware
-  action forms, comments, timeline); submittal queue + list + detail with decision form; insights; audit; bell;
-  "Raise RFI on this page" from the document preview; guided walkthrough banner for guest workspaces.
+**Documents (Phase 1).** SQL Server 2022 via Docker Compose (`127.0.0.1:14330`); EF Core model for every spec entity
+with FKs, unique/check constraints, rowversion, list indexes, immutability and append-only triggers and the
+documented `vw_ReviewQueue` view; idempotent seeding (2 fictional projects, 5 personas, 15 synthetic documents with
+17 revisions incl. a superseded HVAC spec, an image-only scan and a prompt-injection PDF; 12 RFIs, 8 submittals, 3
+overdue items); Identity cookie auth + antiforgery, per-project role checks with 404 for non-members, ProblemDetails,
+rate limiting, structured logging, OpenAPI (dev), `/health` and `/health/ready`; local-disk and SQL `varbinary`
+storage; upload/version/search/compare/download/preview APIs; guest demo (isolated tenant, personas, reset, quotas,
+cleanup); Angular landing, case study, login, demo, register, document detail (pdf.js preview), 403/404 pages.
 
-## What works (Phase 1, verified)
+**Workflows (Phase 2).** RFI and submittal state machines through one audited transition path each (404/403/409,
+rowversion), pinned page citations with "newer revision exists", one decision per submittal cycle, Revise & Resubmit
+with a newer revision, comments with page citations, audit endpoint and per-resource timelines, review queue from the
+SQL view, idempotent overdue reminders with bounded retries, notification bell, live insights charts with data
+tables, guided walkthrough banner, RFI/submittal/insights/audit screens.
 
-- SQL Server 2022 container via `docker compose up -d sql` on `127.0.0.1:14330` with a health check.
-- EF Core model for **all** spec entities (tenants, projects, memberships, documents, revisions, stored files, RFIs,
-  responses, submittals, review decisions, extraction suggestions, comments, audit events, notifications) in one
-  initial migration with FKs, unique and check constraints, rowversion columns, list/filter indexes, the
-  revision-immutability and audit append-only triggers, and the documented `vw_ReviewQueue` view.
-- Startup migration + idempotent seeding of the persistent sample workspace: 2 fictional projects, 5 personas,
-  15 synthetic documents (17 revisions, one superseded HVAC spec, one image-only PDF, one PDF with a
-  prompt-injection-style sentence), 12 RFIs and 8 submittals across all states with audit histories, exactly 3
-  overdue items. (RFI/submittal **screens and APIs** are Phase 2; the rows are seeded now.)
-- Identity cookie auth, antiforgery on all unsafe methods, generic login errors + lockout, per-project role checks
-  with 404 for non-members, ProblemDetails errors, rate limiting, security headers, JSON logging outside
-  development, OpenAPI in development, `/health` and `/health/ready`.
-- Storage abstraction with local-disk and SQL `varbinary(max)` implementations (`Storage:Mode`).
-- Document APIs: list with filters + server paging, create with first revision, upload new revision (magic bytes,
-  size limit, SHA-256, generated key, transaction + audit), history, metadata comparison, authorized streamed
-  download and inline preview.
-- Guest demo: `/api/demo/start` creates an isolated tenant from the seed template in ~0.3 s locally (measured once
-  with curl: `real 0m0.289s`), persona switching within the tenant, reset, hourly per-IP quota, global cap, cleanup
-  service for expired tenants.
-- Angular app: landing page with a real screenshot, case-study scaffold ("Phase 1 of 3"), login, one-click `/demo`,
-  app shell with project switcher, persona switcher and guest banner, document register (filters, sort, paging,
-  revision chips, loading/empty/error states), document detail (title block, pdf.js/TXT/image preview with page
-  navigation, version history, revision comparison, audit trail, upload-new-revision dialog), 403/404 pages.
-- GitHub Actions workflow (backend, frontend, e2e, `ci-ok`) — written, **not yet run on GitHub** (no remote; owner
-  action).
+**Hardening and presentation (Phase 3).** Rules-based extraction (page, snippet, rule, confidence) with human
+accept/reject that updates metadata through an audited path; "No text layer detected — extraction unavailable (no OCR
+configured)" for scans; optional language-model adapter behind `IExtractionEngine` (disabled; validated, quota-limited,
+falls back to rules); prompt-injection test on the seeded PDF; active-content PDFs download-only; HSTS; guest upload
+quota; antiforgery verified on every unsafe route; rate-limit, lockout, header and path-traversal tests; pdf.js
+upgraded for a security advisory; CSP-compatible production build; static-asset compression; production Docker image
+(non-root, HEALTHCHECK) serving API + Angular from one origin; Render blueprint, Azure SQL free-offer Bicep, deployment
+guide, smoke scripts; CI with path filters, Docker job and `ci-ok`; Dependabot; polished landing with real
+screenshots and social image; complete case study.
 
-## Commands run and real results — Phase 2 (2026-11-15, Windows 11)
+## Commands run and real results — final run (2026-11-15, Windows 11)
 
 | Command | Result |
 | --- | --- |
 | `dotnet format api/DocRoof.slnx --verify-no-changes` | exit 0 |
 | `dotnet build api/DocRoof.slnx` | 0 warnings, 0 errors |
-| `dotnet test api/DocRoof.slnx` | Unit: **104 passed**, 0 failed. Integration (Testcontainers SQL Server 2022): **38 passed**, 0 failed |
+| `dotnet test api/DocRoof.slnx` | Unit: **121 passed**, 0 failed. Integration (Testcontainers SQL Server 2022): **57 passed**, 0 failed |
+| `dotnet list api/DocRoof.slnx package --vulnerable --include-transitive` | no vulnerable packages (all 5 projects) |
 | `npm run lint` | All files pass linting |
 | `npm run format:check` | All matched files use Prettier code style |
-| `npm test -- --watch=false` | 5 files, **20 tests passed** |
+| `npm test -- --watch=false` | 6 files, **23 tests passed** |
 | `npm run build` | bundle generated, no budget errors |
-| `npx playwright test --project=chromium` | **3 passed**: smoke, full guided scenario (create RFI on R1 p.3 → assign → answer → approve → close → audit), Reset my demo |
-| `npx playwright test --project=screenshots` | wrote register, document-detail, rfi-detail, submittals, insights screenshots |
+| `npm audit --omit=dev` | first run: 1 high (pdfjs-dist 5.7.284, GHSA-hq66-cqwq-w95j) → upgraded to 6.5.438 → **0 vulnerabilities** |
+| `npx playwright test --project=chromium` | **9 passed** in two consecutive runs: smoke; full guided scenario (HVAC spec → history → RFI on R1 p.3 → assign → answer → approve → close → audit); Reset my demo; axe WCAG 2.1 A/AA on landing, register and RFI detail (0 violations); mobile 390 px (no horizontal scroll); keyboard-only; extraction (view on page, accept, scan limitation) |
+| `npx playwright test --project=screenshots` | regenerated 5 screenshots and `og-image.png` |
+| `docker build -t docroof:local .` and `docker compose --profile app up -d --build` | image built (471 MB); container reported `healthy` |
+| `./scripts/smoke.ps1 -BaseUrl http://localhost:5180` and `./scripts/smoke.sh http://localhost:5180` | both passed against the production container (health, readiness, landing, demo start, 9 documents) |
+| `npx lighthouse@12.8.2 http://localhost:5180/` (production container, mobile preset) | Performance **72**, Accessibility **100**, Best Practices **100**, SEO **100** (LCP 5.2 s, CLS 0.097) |
+| same with `--preset=desktop` | Performance **97**, Accessibility **100**, Best Practices **100**, SEO **100** (LCP 1.1 s) |
 
-Notes from the run: the first e2e attempt failed with "Demo limit reached: at most 5 workspaces per hour" — the
-per-IP quota working against repeated local runs. Development settings now raise it (production default unchanged,
-ADR-016). The persona-menu click was flaky once; the e2e helper now retries with a fresh menu.
+The Lighthouse runs were made on the production image before the final two UI tweaks (panel order on the document
+page, test hardening); the landing page itself was unchanged afterwards.
 
-## Commands run and real results — Phase 1 (2026-11-15, Windows 11)
+### Problems found and fixed during Phase 3 runs
 
-| Command | Result |
-| --- | --- |
-| `docker compose up -d sql` | container `docroof-sql` healthy |
-| `dotnet run --project api/src/DocRoof.Api` (Development) | migration `InitialCreate` applied; "Seeded tenant 5a3f0000-… (15 documents)" |
-| manual curl checks | login → 200; `/api/projects` counts MCC 9 docs/6 open RFIs/3 open submittals/2 overdue, WOR 6/2/1/1; download headers `attachment`, `nosniff`, sandbox CSP; guest download of another tenant's revision → 404; POST without antiforgery → 400 |
-| `dotnet format api/DocRoof.slnx --verify-no-changes` | exit 0 |
-| `dotnet build api/DocRoof.slnx` | 0 warnings, 0 errors |
-| `dotnet test api/DocRoof.slnx` | Unit: **45 passed**, 0 failed. Integration (Testcontainers SQL Server 2022): **20 passed**, 0 failed |
-| `npm run lint` | All files pass linting |
-| `npm run format:check` | All matched files use Prettier code style |
-| `npm test -- --watch=false` | 2 files, **9 tests passed** |
-| `npm run build` | bundle generated, no budget errors |
-| `npx playwright test --project=chromium` | **1 passed** (landing → Try the demo → register → detail) |
-| `npx playwright test --project=screenshots` | wrote `web/public/screenshots/register.png` and `document-detail.png` |
+- `npm audit` found GHSA-hq66-cqwq-w95j in pdf.js 5 → upgraded to 6.5.438; the guided e2e test then caught that
+  `PDFDocumentProxy.destroy()` no longer exists → the preview destroys the loading task instead.
+- Lighthouse reported a CSP console error on the production build: Angular's critical-CSS `onload` script was blocked,
+  leaving the stylesheet as `media="print"` → `inlineCritical: false` (Best Practices 93 → 100).
+- The mobile test found 195 px horizontal overflow from visually-hidden labels escaping the table scroll box → scroll
+  containers are positioned.
+- The keyboard test flaked once (tabbing before the lazy page rendered) → it now waits for content.
 
-## Known issues / limitations
+## Earlier phase runs (for history)
 
-- Extraction (rules engine, suggestions UI) is not built yet (Phase 3); the landing page labels it "In progress".
-- The CI workflow has never run on GitHub (no remote configured).
-- `docker build` of the production image has not been run yet (Phase 3).
-- The OG image referenced in `index.html` (`/og-image.png`) is not generated yet (Phase 3).
-- `Dockerfile`/compose `app` profile exist but are untested.
+- Phase 2 (2026-11-15): unit 104, integration 38, Angular 20, Playwright 3 — all passed. First e2e attempt hit the
+  5-per-hour demo quota from repeated local runs (development quota raised, ADR-016).
+- Phase 1 (2026-11-15): unit 45, integration 20, Angular 9, Playwright 1 — all passed.
+
+## Known issues and limitations
+
+- Hosted deployment not done (owner accounts). CI never executed on GitHub.
+- Mobile Lighthouse performance (72) is limited by client-side rendering of the landing page; prerendering `/` and
+  `/case-study` would be the next step.
+- No malware scanning, no OCR, heuristic PDF active-content detection, in-app notifications only (see SECURITY.md).
+- Rules-based extraction targets title-block conventions like the seeded documents'.
+- Rate limiting is in-memory per instance.
 
 ## Owner actions needed
 
-See [OWNER_TODO.md](OWNER_TODO.md): create the GitHub repository and push; set the GitHub link in the footer.
+See [OWNER_TODO.md](OWNER_TODO.md): push to GitHub, set `GITHUB_URL`, optionally deploy (Azure SQL free offer +
+Render free web service) and record the real smoke output here.
 
-## Next steps
+## Next steps (optional)
 
-Phase 3: rules-based extraction with page citations and human confirmation, upload/security hardening (headers,
-rate-limit and path-traversal tests, dependency audits), accessibility and mobile e2e, production Docker image,
-deployment configuration and docs, polished landing and case study.
+Prerender public pages for mobile performance; email notifications; OCR as an explicit, labelled add-on; distributed
+rate limiting for multi-instance hosting.

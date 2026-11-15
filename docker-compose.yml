@@ -32,7 +32,7 @@ services:
         condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      ConnectionStrings__DocRoof: "Server=sql,1433;Database=DocRoof;User Id=sa;Password=${MSSQL_SA_PASSWORD:-DocRoof_Local_Dev_2026!};TrustServerCertificate=True;Encrypt=True"
+      ConnectionStrings__DocRoof: "Server=sql,1433;Database=DocRoofContainer;User Id=sa;Password=${MSSQL_SA_PASSWORD:-DocRoof_Local_Dev_2026!};TrustServerCertificate=True;Encrypt=True"
       Database__MigrateOnStartup: "true"
       Database__SeedSampleTenant: "true"
       Storage__Mode: Database
