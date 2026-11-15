@@ -24,6 +24,8 @@ public sealed class ApiExceptionHandler(IProblemDetailsService problems, ILogger
                 "The record was changed by someone else. Reload and try again.", null),
             DbUpdateException { InnerException: SqlException { Number: 2601 or 2627 } } => (StatusCodes.Status409Conflict, "Conflict",
                 "A record with the same unique value already exists.", null),
+            DbUpdateException { InnerException: SqlException { Number: 1205 } } => (StatusCodes.Status409Conflict, "Conflict",
+                "The record was being changed by another request. Try again.", null),
             ImmutableRecordException imm => (StatusCodes.Status409Conflict, "Conflict", imm.Message, null),
             BadHttpRequestException bad => (bad.StatusCode, "Bad request", "The request could not be read.", (IDictionary<string, string[]>?)null),
             OperationCanceledException when httpContext.RequestAborted.IsCancellationRequested => (499, "Client closed request", "", null),

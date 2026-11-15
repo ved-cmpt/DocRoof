@@ -5,6 +5,7 @@ using DocRoof.Infrastructure.Seeding;
 using DocRoof.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -35,10 +36,11 @@ public static class DependencyInjection
                                ?? throw new InvalidOperationException("Connection string 'DocRoof' is not configured.");
 
         services.AddSingleton(TimeProvider.System);
-        services.AddSingleton<ImmutabilityInterceptor>();
+        // All registered interceptors apply (tests can add fault-injection interceptors).
+        services.AddSingleton<IInterceptor, ImmutabilityInterceptor>();
         services.AddDbContext<DocRoofDbContext>((sp, o) => o
             .UseSqlServer(connectionString, sql => sql.CommandTimeout(60))
-            .AddInterceptors(sp.GetRequiredService<ImmutabilityInterceptor>()));
+            .AddInterceptors(sp.GetServices<IInterceptor>()));
 
         services.Configure<StorageOptions>(config.GetSection(StorageOptions.Section));
         services.Configure<DemoOptions>(config.GetSection(DemoOptions.Section));
@@ -78,6 +80,17 @@ public static class DependencyInjection
         services.AddScoped<DemoService>();
         services.AddScoped<ProjectService>();
         services.AddScoped<DocumentService>();
+        services.AddScoped<Notifier>();
+        services.AddScoped<RfiService>();
+        services.AddScoped<SubmittalService>();
+        services.AddScoped<CommentService>();
+        services.AddScoped<AuditService>();
+        services.AddScoped<ReviewQueueService>();
+        services.AddScoped<NotificationService>();
+        services.AddScoped<InsightsService>();
+        services.Configure<ReminderOptions>(config.GetSection(ReminderOptions.Section));
+        services.AddSingleton<OverdueReminderService>();
+        services.AddHostedService(sp => sp.GetRequiredService<OverdueReminderService>());
 
         services.AddHostedService<DatabaseInitializer>();
         services.AddSingleton<GuestCleanupService>();
