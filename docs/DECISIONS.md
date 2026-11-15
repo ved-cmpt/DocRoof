@@ -116,3 +116,28 @@ The first GitHub CI run failed to compile: the unanchored `data/` rule in `.giti
 storage) also matched `api/src/DocRoof.Infrastructure/Data/` because Git on Windows ignores case, so the DbContext,
 interceptors and migrations were never committed. Local builds passed because the files existed on disk. The rule
 is now `/data/`; a clean clone is built before pushing CI fixes.
+
+## ADR-024 — Design system: warm neutrals, one brand colour, sidebar shell
+The first UI (orange/navy, hazard stripes, blueprint grid, coloured card bars, dense marketing text) was rejected as
+generic and noisy. The redesign follows app-grid clarity for the workspace and a calm, product-first marketing page:
+
+- **Tokens only.** Every colour, radius, shadow and type size is a CSS variable in `web/src/styles.scss`, mirrored into
+  the Angular Material theme. Paper-white background `#FAFAF7`, ink text `#14201C`, one brand colour (teal-green
+  `#0F6E5C`) used only for primary actions, selection and links. Status colours appear only as a soft tint with darker
+  text, through one `<app-status>` chip (radius 6) — no mixed circle/square chips, no coloured top bars.
+- **Type.** Plus Jakarta Sans (headings), Inter (UI, 14 px app body), JetBrains Mono (document numbers and revision
+  labels only), self-hosted latin subsets via @fontsource with `font-display: swap`.
+- **One icon set.** Lucide outlines at 1.5 stroke, generated into `icons.generated.ts` by `web/scripts/generate-icons.mjs`
+  so only used icons ship (no icon font, no runtime dependency).
+- **Shell.** A 240 px collapsible (64 px) sidebar that becomes a drawer below 900 px, with the profile menu bottom-left
+  (persona switch, notifications, tour, reset, sign out) and a slim per-page top bar (breadcrumb, title, search, page
+  action, bell). The guided task became an opt-in popover; the demo banner became a dismissible pill.
+- **Records.** Detail pages use a two-column layout with a properties panel. Activity is rendered as sentences from the
+  audit vocabulary (`shared/activity.ts`) instead of raw field dumps.
+- **Forms and dialogs.** Native inputs styled by tokens (labels above, helper text below) instead of floating-label form
+  fields; dialogs share one anatomy (560 px, full-screen sheet below 600 px, scrolling body, right-aligned footer).
+  Assign, reason, decision and resubmit actions moved from inline forms into dialogs.
+- **Charts.** HTML bars with a stretched SVG line, so text stays crisp at any width; brand + neutral greys, status
+  colour only for overdue; every chart has a data-table toggle.
+- **Review loop.** `web/e2e/review.spec.ts` (Playwright project `review`) captures every screen at 1440 and 390 px into
+  `.local/review/` for visual review; it is not part of CI.

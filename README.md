@@ -24,12 +24,12 @@ templates and smoke scripts are ready ([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md),
 | --- | --- |
 | Backend unit tests (xUnit) | 121 passed |
 | Backend integration tests (WebApplicationFactory + Testcontainers SQL Server 2022) | 57 passed |
-| Angular unit tests (Vitest) | 23 passed |
-| Playwright end-to-end (Chromium) | 9 passed |
+| Angular unit tests (Vitest) | 37 passed |
+| Playwright end-to-end (Chromium) | 13 passed |
 | Lint / format (ESLint, Prettier, `dotnet format`) | clean |
 | Dependency audits (`dotnet list package --vulnerable`, `npm audit --omit=dev`) | 0 known vulnerabilities |
 | Production Docker image + `scripts/smoke.ps1` / `smoke.sh` | passed locally |
-| Lighthouse, landing page, production image | mobile 72 / 100 / 100 / 100 · desktop 97 / 100 / 100 / 100 (perf / a11y / best practices / SEO) |
+| Lighthouse, landing page, production image | mobile 84 / 100 / 100 / 100 · desktop 99 / 100 / 100 / 100 (perf / a11y / best practices / SEO) |
 
 ## Quick start (Windows PowerShell)
 
@@ -42,6 +42,10 @@ dotnet run --project api/src/DocRoof.Api --launch-profile http   # API on http:/
 # second terminal
 Set-Location web; npm start       # app on http://localhost:4210
 ```
+
+The Angular dev server proxies `/api` and `/health` to the API on port 5180 (`web/proxy.conf.json`), so both must be
+running for **Try the live demo** to work. Check the API with `curl http://localhost:5180/health` (prints `Healthy`);
+if it is down, the demo page says so and shows the command above.
 
 Open http://localhost:4210 and choose **Try the live demo**, or sign in at `/login` with a sample account such as
 `controller.sample@docroof.test` / `DocRoofDemo2026` (intentionally public, local-only — see [SECURITY.md](SECURITY.md)).
@@ -70,16 +74,24 @@ docker compose --profile app up -d --build        # SQL Server + production imag
    8 submittals, 3 overdue items). It is deleted after 24 hours; **Reset my demo** rebuilds it.
 2. Open `MCC-M-23 05 00` (Common Work Results for HVAC) and compare R0 with R1.
 3. On R1 page 3 choose **Raise RFI on this page** and submit it.
-4. Switch persona (top bar) to **Priya Raman, Project Manager** and assign **Marcus Lindqvist** with a due date.
+4. Switch persona (profile menu, bottom-left) to **Priya Raman, Project Manager** and assign **Marcus Lindqvist**.
 5. Switch to Marcus and post an answer; switch back to Priya, approve it and close the RFI.
-6. Open **Audit** to see every step with actor and timestamp. A banner tracks this guided task.
+6. Open **Audit** to see every step with actor and timestamp. **Take the tour** in the profile menu walks you through
+   these steps in a small popover.
 7. As **Dana Okafor (Document Controller)**, choose **Suggest metadata** on a specification: each suggestion cites its
    page; accept or reject it. The scanned drawing `MCC-A-101` shows the "no text layer" limitation.
 
 | | |
 | --- | --- |
-| ![Document detail](web/public/screenshots/document-detail.png) | ![RFI detail](web/public/screenshots/rfi-detail.png) |
-| ![Submittals and review queue](web/public/screenshots/submittals.png) | ![Insights](web/public/screenshots/insights.png) |
+| ![Document record with preview and version history](web/public/screenshots/document-detail.png) | ![RFI record with citation and details panel](web/public/screenshots/rfi-detail.png) |
+| ![Submittal record with review decisions](web/public/screenshots/submittals.png) | ![Insights](web/public/screenshots/insights.png) |
+
+## Design
+
+Warm paper neutrals with one teal-green brand colour for primary actions, selection and links; status colours only as
+soft tints. Plus Jakarta Sans for headings, Inter for the UI, JetBrains Mono for document numbers. The workspace uses a
+collapsible sidebar, slim top bar, grid-style tables with compact filter chips and record pages with a properties panel.
+All tokens live in `web/src/styles.scss`; the reasoning is in [ADR-024](docs/DECISIONS.md).
 
 ## What is inside
 
@@ -89,7 +101,7 @@ docker compose --profile app up -d --build        # SQL Server + production imag
 | Revisions | immutable rows with SHA-256, supersession chain, metadata comparison, authorized streamed downloads, pdf.js preview |
 | RFIs | Draft → Submitted → Assigned → Answered → Closed (→ Reopened), PM approval before close, page-pinned citations |
 | Submittals | one decision per cycle by the assigned reviewer, Revise & Resubmit with a newer revision, finalize |
-| Oversight | review queue from a documented SQL view, idempotent overdue reminders, notification bell, live insights, audit trail |
+| Oversight | review queue page from a documented SQL view, idempotent overdue reminders, notifications, live insights, audit trail |
 | Extraction | deterministic rules engine with page citations, confidence and rule; human accept/reject; optional language-model adapter (off) |
 | Guest demo | isolated tenant per visitor from the seed template, five personas, guided task, reset, quotas, 24 h cleanup |
 | Security | Identity cookies + antiforgery, per-project roles, 404 for cross-tenant IDs, magic-byte uploads, CSP/HSTS, rate limits, lockout |
@@ -110,7 +122,8 @@ npm run lint; npm run format:check
 npm test -- --watch=false                     # Angular unit tests
 npm run build
 npx playwright test --project=chromium        # needs the API (5180) and web app (4210) running
-npx playwright test --project=screenshots     # regenerates README/landing screenshots and the social image
+npx playwright test --project=screenshots     # regenerates 2x README/landing screenshots, social image and PNG icons
+npx playwright test --project=review          # design review: every screen at 1440 and 390 px into .local/review
 ```
 
 The six must-pass domain tests are named `MustPass1_…` to `MustPass6_…` (trait `Category=MustPass`).

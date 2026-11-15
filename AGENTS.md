@@ -47,7 +47,9 @@ EF Core → SQL Server. The browser never talks to SQL. Frontend hiding is never
 | Backend format check | `dotnet format api/DocRoof.slnx --verify-no-changes` |
 | Frontend lint / format / tests / build | `npm run lint` · `npm run format:check` · `npm test -- --watch=false` · `npm run build` |
 | End-to-end | API + web running, then `cd web; npx playwright test --project=chromium` |
-| Screenshots + social image | `cd web; npx playwright test --project=screenshots` (writes `web/public/screenshots`, `web/public/og-image.png`) |
+| Screenshots + social image | `cd web; npx playwright test --project=screenshots` (writes `web/public/screenshots`, `web/public/og-image.png`, PNG icons) |
+| Design review capture | `cd web; npx playwright test --project=review` (every screen at 1440 and 390 px into `.local/review/`, not committed) |
+| Regenerate icons | `cd web; node scripts/generate-icons.mjs` (Lucide subset → `src/app/shared/icons.generated.ts`) |
 | Production image | `docker compose --profile app up -d --build` (port 5180; stop the dev API first) |
 | Smoke test | `./scripts/smoke.ps1 -BaseUrl http://localhost:5180` or `./scripts/smoke.sh http://localhost:5180` |
 | Dependency audits | `dotnet list api/DocRoof.slnx package --vulnerable --include-transitive` · `cd web; npm audit --omit=dev` |
