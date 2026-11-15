@@ -3,6 +3,13 @@ import { Page, expect, test } from '@playwright/test';
 import { goTo, startDemo, switchPersona } from './helpers';
 
 async function axe(page: Page): Promise<void> {
+  // A toast that is still opening holds its content in an aria-hidden wrapper for 150 ms and fades in, so axe would
+  // measure a transient state. Wait until any open toast has announced and finished animating.
+  await page.waitForFunction(
+    () =>
+      !document.querySelector('.mat-mdc-snack-bar-label > [aria-hidden="true"]') &&
+      document.getAnimations().every((a) => a.playState !== 'running'),
+  );
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
     .analyze();
@@ -14,6 +21,17 @@ async function axe(page: Page): Promise<void> {
         .join(' | ')}`,
   );
   expect(summary, summary.join('\n')).toEqual([]);
+}
+
+/**
+ * A fresh guest workspace shows a one-time welcome toast 600 ms after the shell renders. Wait until it has opened and
+ * been announced, so axe always measures it at rest instead of racing its entry.
+ */
+async function startDemoSettled(page: Page): Promise<void> {
+  await startDemo(page);
+  await expect(
+    page.locator('[aria-live]').getByText('Welcome to your private demo workspace.'),
+  ).toBeVisible();
 }
 
 async function pageOverflow(page: Page): Promise<number> {
@@ -29,6 +47,12 @@ test.describe('accessibility (axe, WCAG 2.1 A/AA rules)', () => {
     await axe(page);
   });
 
+  test('case study has no detectable violations (incl. links inside text)', async ({ page }) => {
+    await page.goto('/case-study');
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await axe(page);
+  });
+
   test('sign-in page has no detectable violations', async ({ page }) => {
     await page.goto('/login');
     await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
@@ -36,13 +60,13 @@ test.describe('accessibility (axe, WCAG 2.1 A/AA rules)', () => {
   });
 
   test('document register has no detectable violations', async ({ page }) => {
-    await startDemo(page);
+    await startDemoSettled(page);
     await expect(page.getByRole('table')).toBeVisible();
     await axe(page);
   });
 
   test('RFI detail has no detectable violations', async ({ page }) => {
-    await startDemo(page);
+    await startDemoSettled(page);
     await goTo(page, 'RFIs');
     await page.getByRole('table').getByRole('link', { name: 'RFI-003' }).click();
     await expect(page.getByTestId('rfi-state')).toHaveText('Answered');
@@ -50,7 +74,7 @@ test.describe('accessibility (axe, WCAG 2.1 A/AA rules)', () => {
   });
 
   test('insights and the New RFI dialog have no detectable violations', async ({ page }) => {
-    await startDemo(page);
+    await startDemoSettled(page);
     await goTo(page, 'Insights');
     await expect(
       page.getByRole('heading', { name: 'RFIs opened vs closed per week' }),
