@@ -64,6 +64,12 @@ export const routes: Routes = [
           import('./pages/submittals/submittal-detail.page').then((m) => m.SubmittalDetailPage),
       },
       {
+        path: 'review-queue',
+        title: 'Review queue — DocRoof',
+        loadComponent: () =>
+          import('./pages/review-queue/review-queue.page').then((m) => m.ReviewQueuePage),
+      },
+      {
         path: 'insights',
         title: 'Insights — DocRoof',
         loadComponent: () => import('./pages/insights/insights.page').then((m) => m.InsightsPage),

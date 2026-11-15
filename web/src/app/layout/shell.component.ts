@@ -1,76 +1,137 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
+import { A11yModule } from '@angular/cdk/a11y';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+  viewChild,
+} from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatSelectModule } from '@angular/material/select';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter, map } from 'rxjs';
 import { ApiService } from '../core/api.service';
-import { Persona } from '../core/api.models';
-import { problemMessage } from '../core/http';
 import { label } from '../core/labels';
 import { SessionService } from '../core/session.service';
 import { ToastService } from '../core/toast.service';
-import { LogoComponent } from '../shared/brand';
 import { WalkthroughService } from '../core/walkthrough.service';
-import { NotificationBellComponent, WalkthroughBannerComponent } from './widgets';
+import { IconName } from '../shared/icons.generated';
+import {
+  AvatarComponent,
+  IconComponent,
+  LogoComponent,
+  RelativeTimePipe,
+} from '../shared/ui';
+import { NotificationCenter, ShellState, WorkspaceActions } from './shell.state';
+import { TourComponent } from './tour.component';
 
 interface NavItem {
   path: string;
   label: string;
+  icon: IconName;
 }
 
 @Component({
   selector: 'app-shell',
   imports: [
+    A11yModule,
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
-    MatButtonModule,
     MatMenuModule,
-    MatSelectModule,
+    MatTooltipModule,
     LogoComponent,
-    NotificationBellComponent,
-    WalkthroughBannerComponent,
+    IconComponent,
+    AvatarComponent,
+    RelativeTimePipe,
+    TourComponent,
   ],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
 })
 export class ShellComponent {
   protected readonly session = inject(SessionService);
+  protected readonly shell = inject(ShellState);
+  protected readonly actions = inject(WorkspaceActions);
+  protected readonly notifications = inject(NotificationCenter);
+  protected readonly tour = inject(WalkthroughService);
   private readonly api = inject(ApiService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   protected readonly label = label;
 
-  protected readonly tour = inject(WalkthroughService);
-
   protected readonly nav: NavItem[] = [
-    { path: '/app/documents', label: 'Documents' },
-    { path: '/app/rfis', label: 'RFIs' },
-    { path: '/app/submittals', label: 'Submittals' },
-    { path: '/app/insights', label: 'Insights' },
-    { path: '/app/audit', label: 'Audit' },
+    { path: '/app/documents', label: 'Documents', icon: 'file-text' },
+    { path: '/app/rfis', label: 'RFIs', icon: 'message-square-text' },
+    { path: '/app/submittals', label: 'Submittals', icon: 'clipboard-check' },
+    { path: '/app/review-queue', label: 'Review queue', icon: 'inbox' },
+    { path: '/app/insights', label: 'Insights', icon: 'chart-column' },
+    { path: '/app/audit', label: 'Audit', icon: 'scroll-text' },
   ];
 
-  protected readonly personas = signal<Persona[]>([]);
-  protected readonly busy = signal(false);
-  protected readonly activePersona = computed(
-    () => this.personas().find((p) => p.isActive) ?? null,
+  /** Below 900 px the sidebar becomes an off-canvas drawer. */
+  protected readonly mobile = toSignal(
+    inject(BreakpointObserver)
+      .observe('(max-width: 900px)')
+      .pipe(map((s) => s.matches)),
+    { initialValue: false },
   );
-  protected readonly expiresIn = computed(() => {
-    const exp = this.session.me()?.guestExpiresAt;
-    if (!exp) {
-      return '';
-    }
-    const hours = Math.max(0, Math.round((new Date(exp).getTime() - Date.now()) / 3_600_000));
-    return hours >= 1 ? `${hours} h` : 'less than an hour';
-  });
+  protected readonly collapsed = computed(() => this.shell.collapsed() && !this.mobile());
+  protected readonly queueCount = signal(0);
+  private readonly closeBtn = viewChild<ElementRef<HTMLButtonElement>>('closeBtn');
 
   constructor() {
+    this.notifications.start();
+    inject(DestroyRef).onDestroy(() => this.notifications.stop());
+
+    this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe(() => {
+      this.shell.closeDrawer();
+      this.refreshQueue();
+    });
+
+    // Move focus into the drawer when it opens on small screens.
     effect(() => {
-      this.session.version();
-      if (this.session.isGuest()) {
-        this.api.personas().subscribe((p) => this.personas.set(p));
+      if (this.mobile() && this.shell.drawerOpen()) {
+        setTimeout(() => this.closeBtn()?.nativeElement.focus(), 0);
       }
+    });
+
+    // Review-queue badge: items waiting on the signed-in person.
+    effect(() => {
+      this.session.project();
+      this.session.version();
+      untracked(() => this.refreshQueue());
+    });
+
+    // One-time welcome toast per guest workspace; the tour itself stays hidden until asked for.
+    effect(() => {
+      if (this.session.isGuest() && this.session.me() && !this.tour.welcomed()) {
+        untracked(() => {
+          this.tour.markWelcomed();
+          setTimeout(() => {
+            this.toast
+              .offer('Welcome to your private demo workspace.', 'Take the tour')
+              .subscribe(() => this.tour.start());
+          }, 600);
+        });
+      }
+    });
+  }
+
+  private refreshQueue(): void {
+    const id = this.session.project()?.id;
+    if (!id) {
+      return;
+    }
+    this.api.reviewQueue(id, 'me').subscribe({
+      next: (q) => this.queueCount.set(q.length),
+      error: () => this.queueCount.set(0),
     });
   }
 
@@ -79,39 +140,12 @@ export class ShellComponent {
     void this.router.navigateByUrl('/app/documents');
   }
 
-  protected async switchPersona(p: Persona): Promise<void> {
-    if (p.isActive || this.busy()) {
-      return;
-    }
-    this.busy.set(true);
-    try {
-      await this.session.switchPersona(p.key);
-      this.toast.success(`You are now ${p.displayName} (${p.jobTitle}).`);
-    } catch (e) {
-      this.toast.error(problemMessage(e, 'Could not switch persona.'));
-    } finally {
-      this.busy.set(false);
-    }
-  }
-
-  protected async resetDemo(): Promise<void> {
-    if (this.busy()) {
-      return;
-    }
-    this.busy.set(true);
-    try {
-      await this.session.resetDemo();
-      this.tour.restart();
-      this.toast.success('Your demo workspace was rebuilt from the template.');
-      await this.router.navigateByUrl('/app/documents');
-    } catch (e) {
-      this.toast.error(problemMessage(e, 'Reset failed.'));
-    } finally {
-      this.busy.set(false);
-    }
-  }
-
   protected logout(): void {
     void this.session.logout();
+  }
+
+  protected roleLabel(): string {
+    const role = this.session.role();
+    return role ? label(role) : (this.session.me()?.jobTitle ?? '');
   }
 }

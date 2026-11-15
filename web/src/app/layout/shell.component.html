@@ -1,90 +1,197 @@
 <a class="skip-link" href="#main">Skip to content</a>
-<header class="topbar">
-  <div class="topbar-inner">
-    <a routerLink="/app/documents" class="brand" aria-label="DocRoof workspace home">
-      <app-logo [size]="28" />
-      <span>DocRoof</span>
-    </a>
 
-    @if (session.projects().length > 0) {
-      <mat-form-field class="project-select" appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Project</mat-label>
-        <mat-select
-          [value]="session.project()?.id"
-          (selectionChange)="onProject($event.value)"
-          panelClass="project-panel"
+<div class="shell" [class.collapsed]="collapsed()" [class.mobile]="mobile()">
+  @if (mobile() && shell.drawerOpen()) {
+    <div class="scrim" (click)="shell.closeDrawer()" aria-hidden="true"></div>
+  }
+
+  <aside
+    class="sidebar"
+    [class.open]="shell.drawerOpen()"
+    [attr.aria-hidden]="mobile() && !shell.drawerOpen() ? 'true' : null"
+    [attr.inert]="mobile() && !shell.drawerOpen() ? '' : null"
+    [cdkTrapFocus]="mobile() && shell.drawerOpen()"
+    (keydown.escape)="shell.closeDrawer()"
+  >
+    <div class="side-top">
+      <a routerLink="/app/documents" class="brand" aria-label="DocRoof workspace home">
+        <app-logo [size]="26" [wordmark]="!collapsed()" />
+      </a>
+      @if (mobile()) {
+        <button
+          #closeBtn
+          type="button"
+          class="btn btn-icon"
+          (click)="shell.closeDrawer()"
+          aria-label="Close navigation"
         >
-          @for (p of session.projects(); track p.id) {
-            <mat-option [value]="p.id">{{ p.code }} · {{ p.title }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
+          <app-icon name="x" />
+        </button>
+      }
+    </div>
+
+    @if (session.project(); as p) {
+      <button
+        type="button"
+        class="project-btn"
+        [matMenuTriggerFor]="projectMenu"
+        [attr.aria-label]="'Project: ' + p.code + ' ' + p.title + '. Switch project'"
+        [matTooltip]="collapsed() ? p.code + ' · ' + p.title : ''"
+        matTooltipPosition="right"
+      >
+        <span class="proj-badge" aria-hidden="true">{{ p.code }}</span>
+        <span class="proj-name">{{ p.title }}</span>
+        <app-icon class="proj-caret" name="chevron-down" [size]="16" />
+      </button>
     }
 
-    <nav class="main-nav" aria-label="Workspace">
+    <nav aria-label="Workspace" class="nav">
       @for (item of nav; track item.path) {
-        <a [routerLink]="item.path" routerLinkActive="active" ariaCurrentWhenActive="page">{{
-          item.label
-        }}</a>
+        <a
+          [routerLink]="item.path"
+          routerLinkActive="active"
+          ariaCurrentWhenActive="page"
+          [matTooltip]="collapsed() ? item.label : ''"
+          matTooltipPosition="right"
+        >
+          <app-icon [name]="item.icon" />
+          <span class="nav-label">{{ item.label }}</span>
+          @if (item.path === '/app/review-queue' && queueCount() > 0) {
+            <span class="nav-count" [attr.aria-label]="queueCount() + ' waiting on you'">{{
+              queueCount()
+            }}</span>
+          }
+        </a>
       }
     </nav>
 
-    <span class="spacer"></span>
+    <span class="side-spacer"></span>
 
-    @if (session.isGuest()) {
+    @if (!mobile()) {
       <button
-        mat-stroked-button
-        class="persona-btn"
-        [matMenuTriggerFor]="personaMenu"
-        [disabled]="busy()"
-        aria-label="Switch demo persona"
+        type="button"
+        class="collapse-btn"
+        (click)="shell.toggleCollapsed()"
+        [attr.aria-label]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+        [attr.aria-expanded]="!collapsed()"
       >
-        <span class="persona-dot" aria-hidden="true"></span>
-        {{ session.me()?.displayName }}
-        <span class="persona-role">{{ label(session.role()) }}</span>
+        <app-icon [name]="collapsed() ? 'chevrons-right' : 'chevrons-left'" [size]="16" />
+        <span class="nav-label">Collapse</span>
       </button>
-      <mat-menu #personaMenu="matMenu" xPosition="before">
-        <div class="menu-caption">Switch persona (this demo workspace only)</div>
-        @for (p of personas(); track p.key) {
-          <button
-            mat-menu-item
-            (click)="switchPersona(p)"
-            [attr.aria-current]="p.isActive ? 'true' : null"
-          >
-            <strong>{{ p.displayName }}</strong>
-            <span class="menu-sub">{{ p.jobTitle }}{{ p.isActive ? ' · current' : '' }}</span>
-          </button>
-        }
-      </mat-menu>
     }
 
-    <app-notification-bell />
-
-    <button mat-button class="user-btn" [matMenuTriggerFor]="userMenu" aria-label="Account menu">
-      {{ session.isGuest() ? 'Demo' : session.me()?.displayName }}
+    <button
+      type="button"
+      class="profile"
+      [matMenuTriggerFor]="profileMenu"
+      aria-label="Account menu"
+      [matTooltip]="collapsed() ? (session.me()?.displayName ?? '') : ''"
+      matTooltipPosition="right"
+    >
+      <app-avatar [name]="session.me()?.displayName" [large]="true" />
+      <span class="who">
+        <span class="who-name">{{ session.me()?.displayName }}</span>
+        <span class="who-role">{{ roleLabel() }}</span>
+      </span>
+      <app-icon class="who-more" name="ellipsis" [size]="16" />
     </button>
-    <mat-menu #userMenu="matMenu" xPosition="before">
-      <div class="menu-caption">{{ session.me()?.tenantName }}</div>
-      @if (session.isGuest()) {
-        <button mat-menu-item (click)="resetDemo()">Reset my demo</button>
-      }
-      <a mat-menu-item routerLink="/">Public site</a>
-      <button mat-menu-item (click)="logout()">Sign out</button>
-    </mat-menu>
-  </div>
-</header>
+  </aside>
 
-@if (session.isGuest()) {
-  <div class="guest-banner" role="status">
-    <span>
-      <strong>Guest workspace.</strong> Private to you, seeded with fictional data, deleted
-      automatically in {{ expiresIn() }}.
-    </span>
-    <button mat-button (click)="resetDemo()" [disabled]="busy()">Reset my demo</button>
+  <div class="content">
+    <main id="main" tabindex="-1">
+      <router-outlet />
+    </main>
   </div>
-}
+</div>
 
-<main id="main" tabindex="-1">
-  <app-walkthrough-banner />
-  <router-outlet />
-</main>
+<app-tour />
+
+<!-- Project switcher -->
+<mat-menu #projectMenu="matMenu" class="dr-menu">
+  <div class="menu-label">Projects</div>
+  @for (p of session.projects(); track p.id) {
+    <button
+      mat-menu-item
+      (click)="onProject(p.id)"
+      role="menuitemradio"
+      [attr.aria-checked]="p.id === session.project()?.id"
+    >
+      <span class="mono">{{ p.code }}</span> {{ p.title }}
+      <span class="check-slot">
+        @if (p.id === session.project()?.id) {
+          <app-icon name="check" [size]="16" />
+        }
+      </span>
+    </button>
+  }
+</mat-menu>
+
+<!-- Profile menu -->
+<mat-menu #profileMenu="matMenu" class="dr-menu" yPosition="above">
+  <div class="menu-label">{{ session.me()?.tenantName }}</div>
+  @if (session.isGuest()) {
+    <button mat-menu-item [matMenuTriggerFor]="personaMenu" [disabled]="actions.busy()">
+      <app-icon name="users" /> Switch persona
+    </button>
+  }
+  <button mat-menu-item [matMenuTriggerFor]="notifMenu">
+    <app-icon name="bell" /> Notifications
+    @if (notifications.unread() > 0) {
+      <span class="filter-badge menu-badge">{{ notifications.unread() }}</span>
+    }
+  </button>
+  @if (session.isGuest()) {
+    <button mat-menu-item (click)="tour.start()"><app-icon name="signpost" /> Take the tour</button>
+    <button mat-menu-item (click)="actions.resetDemo()" [disabled]="actions.busy()">
+      <app-icon name="rotate-ccw" /> Reset my demo
+    </button>
+  }
+  <div class="menu-sep" role="separator"></div>
+  <a mat-menu-item routerLink="/"><app-icon name="external-link" /> Public site</a>
+  <button mat-menu-item (click)="logout()"><app-icon name="log-out" /> Sign out</button>
+</mat-menu>
+
+<mat-menu #personaMenu="matMenu" class="dr-menu">
+  <div class="menu-label">Act as (this demo workspace only)</div>
+  @for (p of actions.personas(); track p.key) {
+    <button
+      mat-menu-item
+      (click)="actions.switchPersona(p)"
+      role="menuitemradio"
+      [attr.aria-checked]="p.isActive"
+      class="persona-item"
+    >
+      <app-avatar [name]="p.displayName" />
+      <span class="persona-text">
+        <span>{{ p.displayName }}</span>
+        <span class="persona-sub">{{ p.jobTitle }}</span>
+      </span>
+      <span class="check-slot">
+        @if (p.isActive) {
+          <app-icon name="check" [size]="16" />
+        }
+      </span>
+    </button>
+  }
+</mat-menu>
+
+<mat-menu #notifMenu="matMenu" class="dr-menu">
+  <div class="menu-label">Recent notifications</div>
+  @if (notifications.items().length === 0) {
+    <div class="menu-empty">You're all caught up.</div>
+  }
+  @for (n of notifications.items().slice(0, 5); track n.id) {
+    <button mat-menu-item (click)="notifications.open(n)" class="notif-item">
+      <span class="persona-text">
+        <span>{{ n.message }}</span>
+        <span class="persona-sub">{{ n.createdAt | relTime }}</span>
+      </span>
+    </button>
+  }
+  @if (notifications.unread() > 0) {
+    <div class="menu-sep" role="separator"></div>
+    <button mat-menu-item (click)="notifications.markAll()">
+      <app-icon name="check" /> Mark all read
+    </button>
+  }
+</mat-menu>
