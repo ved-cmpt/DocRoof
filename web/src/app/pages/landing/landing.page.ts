@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PublicFooterComponent, PublicHeaderComponent } from '../../shared/brand';
+import { MEASURED_TESTS } from '../../shared/site';
 
 interface Capability {
   title: string;
@@ -21,6 +22,8 @@ interface Workflow {
   styleUrl: './landing.page.scss',
 })
 export class LandingPage {
+  protected readonly counts = MEASURED_TESTS;
+
   protected readonly workflows: Workflow[] = [
     {
       role: 'Document Controller',
@@ -85,7 +88,7 @@ export class LandingPage {
     {
       title: 'Rules-based extraction',
       body: 'Deterministic suggestions for title, number, dates and spec sections, each citing its source page, accepted or rejected by a person.',
-      status: 'In progress',
+      status: 'Live',
     },
   ];
 }

@@ -17,6 +17,7 @@ import { CommentsComponent } from '../../shared/activity.components';
 import { FilePreviewComponent } from '../../shared/file-preview.component';
 import { RfiCreateDialogComponent, RfiCreateData } from '../rfis/rfi-create-dialog.component';
 import { UploadDialogComponent, UploadDialogData } from './upload-dialog.component';
+import { ExtractionPanelComponent } from './extraction-panel.component';
 import { Comment, RfiDetail } from '../../core/api.models';
 
 /** Seeded HVAC specification used by the guided demo task. */
@@ -32,6 +33,7 @@ export const GUIDED_DOCUMENT = 'MCC-M-23 05 00';
     MatSelectModule,
     FilePreviewComponent,
     CommentsComponent,
+    ExtractionPanelComponent,
   ],
   templateUrl: './document-detail.page.html',
   styleUrl: './document-detail.page.scss',
@@ -177,6 +179,22 @@ export class DocumentDetailPage {
           void this.router.navigate(['/app/rfis', rfi.id]);
         }
       });
+  }
+
+  /** "View on page N" from a suggestion: show that page of the cited revision in the preview. */
+  protected showPage(page: number): void {
+    const r = this.selected();
+    this.previewPage.set(page);
+    this.viewPage.set(page);
+    void this.router.navigate([], {
+      queryParams: { rev: r?.id, page },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+    document.getElementById('preview')?.scrollIntoView({
+      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'start',
+    });
   }
 
   protected onComment(c: Comment): void {

@@ -21,6 +21,7 @@
       <figure class="hero-shot">
         <img
           src="/screenshots/register.png"
+          fetchpriority="high"
           width="1440"
           height="900"
           alt="The DocRoof document register showing controlled documents for a fictional clinic project, with discipline, status and revision chips"
@@ -79,6 +80,46 @@
     <p class="muted small">
       Requesters (for example a site superintendent) raise RFIs and see responses.
     </p>
+  </section>
+  <section class="wrap section gallery" aria-labelledby="gallery-title">
+    <p class="eyebrow">See it working</p>
+    <h2 id="gallery-title">Real screens from the running application</h2>
+    <div class="shots">
+      <figure>
+        <img
+          src="/screenshots/document-detail.png"
+          width="1440"
+          height="900"
+          loading="lazy"
+          alt="Document detail with an in-app PDF preview, version history showing current and superseded revisions, and revision comparison"
+        />
+        <figcaption>
+          Version history with checksums and an in-app preview of the HVAC specification.
+        </figcaption>
+      </figure>
+      <figure>
+        <img
+          src="/screenshots/rfi-detail.png"
+          width="1440"
+          height="900"
+          loading="lazy"
+          alt="RFI detail with the question, a citation pinned to revision R1 page 3, role-aware actions and a timeline"
+        />
+        <figcaption>An RFI pinned to revision R1, page 3, with its audited timeline.</figcaption>
+      </figure>
+      <figure>
+        <img
+          src="/screenshots/insights.png"
+          width="1440"
+          height="1620"
+          loading="lazy"
+          alt="Insights dashboard with RFI turnaround, open versus closed RFIs per week, overdue reviews by discipline and document volume charts"
+        />
+        <figcaption>
+          Live insights computed from the database, with data tables for every chart.
+        </figcaption>
+      </figure>
+    </div>
   </section>
 
   <section class="band blueprint" aria-labelledby="cap-title">
@@ -151,12 +192,16 @@
           <h3>Tests</h3>
           <ul>
             <li>
-              xUnit unit tests and integration tests against a real SQL Server (Testcontainers)
+              {{ counts.unit }} xUnit unit tests and {{ counts.integration }} integration tests on a
+              real SQL Server (Testcontainers)
             </li>
-            <li>Angular component and service tests</li>
-            <li>Playwright end-to-end smoke from landing page to seeded register</li>
+            <li>{{ counts.angular }} Angular component and service tests</li>
+            <li>
+              {{ counts.e2e }} Playwright tests: guided scenario, accessibility (axe), mobile,
+              keyboard-only
+            </li>
           </ul>
-          <a routerLink="/case-study" class="light-link">Measured results in the case study →</a>
+          <a routerLink="/case-study" class="light-link">How it was tested →</a>
         </div>
       </div>
     </div>

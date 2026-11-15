@@ -3,6 +3,8 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   AuditEvent,
+  ExtractionResult,
+  Suggestion,
   AuditQuery,
   Comment,
   CreateRfi,
@@ -211,6 +213,34 @@ export class ApiService {
 
   markAllNotificationsRead(): Observable<unknown> {
     return this.http.post('/api/notifications/read-all', {});
+  }
+
+  // ---------- Extraction ----------
+  extraction(revisionId: string): Observable<ExtractionResult> {
+    return this.http.get<ExtractionResult>(
+      `/api/document-revisions/${revisionId}/extract-suggestions`,
+      silent(),
+    );
+  }
+
+  runExtraction(revisionId: string): Observable<ExtractionResult> {
+    return this.http.post<ExtractionResult>(
+      `/api/document-revisions/${revisionId}/extract-suggestions`,
+      {},
+      silent(),
+    );
+  }
+
+  decideSuggestion(
+    id: string,
+    decision: 'accept' | 'reject',
+    rowVersion: string,
+  ): Observable<Suggestion> {
+    return this.http.post<Suggestion>(
+      `/api/extraction-suggestions/${id}/${decision}`,
+      { rowVersion },
+      silent(),
+    );
   }
 
   downloadUrl(revisionId: string): string {

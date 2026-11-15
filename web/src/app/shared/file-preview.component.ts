@@ -31,6 +31,11 @@ interface PdfPageProxy {
 interface PdfDocProxy {
   numPages: number;
   getPage(n: number): Promise<PdfPageProxy>;
+}
+
+/** pdf.js loading task: owns the worker-side document and is what must be destroyed. */
+interface PdfLoadingTask {
+  promise: Promise<unknown>;
   destroy(): Promise<void>;
 }
 
@@ -169,6 +174,7 @@ export class FilePreviewComponent {
   protected readonly page = signal(1);
   protected readonly pages = signal(1);
   private doc: PdfDocProxy | null = null;
+  private loadingTask: PdfLoadingTask | null = null;
   private renderTask: { cancel(): void } | null = null;
   private loadToken = 0;
 
@@ -207,8 +213,10 @@ export class FilePreviewComponent {
 
   private cleanup(): void {
     this.renderTask?.cancel();
-    void this.doc?.destroy();
+    const task = this.loadingTask;
+    this.loadingTask = null;
     this.doc = null;
+    task?.destroy().catch(() => undefined);
     if (this.imageUrl()) {
       URL.revokeObjectURL(this.imageUrl());
       this.imageUrl.set('');
@@ -233,12 +241,13 @@ export class FilePreviewComponent {
         const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
         pdfjs.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs';
         const data = new Uint8Array(await blob.arrayBuffer());
-        const doc = (await pdfjs.getDocument({ data, enableXfa: false })
-          .promise) as unknown as PdfDocProxy;
+        const task = pdfjs.getDocument({ data, enableXfa: false }) as unknown as PdfLoadingTask;
+        const doc = (await task.promise) as PdfDocProxy;
         if (token !== this.loadToken) {
-          void doc.destroy();
+          task.destroy().catch(() => undefined);
           return;
         }
+        this.loadingTask = task;
         this.doc = doc;
         this.pages.set(doc.numPages);
         const wanted = this.requestedPage();

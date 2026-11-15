@@ -206,6 +206,8 @@ export interface DocumentDetail {
   createdAt: string;
   updatedAt: string;
   rowVersion: string;
+  issueDate: string | null;
+  specSection: string | null;
 }
 
 export interface AuditEvent {
@@ -494,3 +496,31 @@ export const SUBMITTAL_STATUSES: SubmittalStatus[] = [
   'ReviseAndResubmit',
   'Final',
 ];
+
+export type ExtractionField = 'Title' | 'Discipline' | 'DocumentNumber' | 'Date' | 'SpecSection';
+
+export interface Suggestion {
+  id: string;
+  revisionId: string;
+  field: ExtractionField;
+  proposedValue: string;
+  page: number;
+  snippet: string;
+  confidence: 'High' | 'Medium' | 'Low';
+  rule: string;
+  engine: string;
+  status: 'Pending' | 'Accepted' | 'Rejected';
+  decidedBy: UserRef | null;
+  decidedAt: string | null;
+  currentValue: string | null;
+  rowVersion: string;
+}
+
+export interface ExtractionResult {
+  revisionId: string;
+  status: 'NotRun' | 'Ready' | 'NoTextLayer' | 'Unsupported';
+  engineLabel: string;
+  message: string;
+  canRun: boolean;
+  suggestions: Suggestion[];
+}

@@ -62,54 +62,64 @@
         <dd>{{ label(d.myRole) }}</dd>
       </div>
       <div>
+        <dt>Issue date</dt>
+        <dd>{{ d.issueDate ? (d.issueDate | date: 'mediumDate' : 'UTC') : '—' }}</dd>
+      </div>
+      <div>
+        <dt>Spec section</dt>
+        <dd class="mono">{{ d.specSection ?? '—' }}</dd>
+      </div>
+      <div>
         <dt>Last updated</dt>
         <dd>{{ d.updatedAt | date: 'medium' }}</dd>
       </div>
     </dl>
 
     <div class="detail-grid">
-      <section class="panel" aria-labelledby="preview-title">
-        <div class="panel-header">
-          <h2 id="preview-title">
-            Preview · <span class="mono">{{ selected()?.versionLabel }}</span>
-            @if (selected() && !selected()!.isCurrent) {
-              <span class="chip warn plain">Superseded</span>
-            }
-          </h2>
-          @if (selected(); as s) {
-            <div class="row">
-              @if (canRaiseRfi()) {
-                <button mat-stroked-button (click)="raiseRfi()">
-                  Raise RFI on this page ({{ s.versionLabel }} p.{{ viewPage() }})
-                </button>
+      <div class="stack">
+        <section class="panel" aria-labelledby="preview-title" id="preview">
+          <div class="panel-header">
+            <h2 id="preview-title">
+              Preview · <span class="mono">{{ selected()?.versionLabel }}</span>
+              @if (selected() && !selected()!.isCurrent) {
+                <span class="chip warn plain">Superseded</span>
               }
-              <button mat-button (click)="download(s)">Download {{ s.versionLabel }}</button>
-            </div>
-          }
-        </div>
-        <div class="panel-pad">
-          @if (selected(); as s) {
-            <app-file-preview
-              [revision]="s"
-              [requestedPage]="previewPage()"
-              (pageChange)="onPreviewPage($event)"
-            />
-          }
-        </div>
-      </section>
+            </h2>
+            @if (selected(); as s) {
+              <div class="row">
+                @if (canRaiseRfi()) {
+                  <button mat-stroked-button (click)="raiseRfi()">
+                    Raise RFI on this page ({{ s.versionLabel }} p.{{ viewPage() }})
+                  </button>
+                }
+                <button mat-button (click)="download(s)">Download {{ s.versionLabel }}</button>
+              </div>
+            }
+          </div>
+          <div class="panel-pad">
+            @if (selected(); as s) {
+              <app-file-preview
+                [revision]="s"
+                [requestedPage]="previewPage()"
+                (pageChange)="onPreviewPage($event)"
+              />
+            }
+          </div>
+        </section>
 
-      <section class="panel panel-pad comments-panel" aria-labelledby="doc-comments-title">
-        <h2 id="doc-comments-title">Comments</h2>
-        <app-comments
-          resource="documents"
-          [resourceId]="d.id"
-          [comments]="comments()"
-          [revisionId]="selected()?.id ?? null"
-          [maxPage]="selected()?.pageCount ?? null"
-          [documentId]="d.id"
-          (added)="onComment($event)"
-        />
-      </section>
+        <section class="panel panel-pad comments-panel" aria-labelledby="doc-comments-title">
+          <h2 id="doc-comments-title">Comments</h2>
+          <app-comments
+            resource="documents"
+            [resourceId]="d.id"
+            [comments]="comments()"
+            [revisionId]="selected()?.id ?? null"
+            [maxPage]="selected()?.pageCount ?? null"
+            [documentId]="d.id"
+            (added)="onComment($event)"
+          />
+        </section>
+      </div>
 
       <div class="stack">
         <section class="panel" aria-labelledby="history-title">
@@ -159,6 +169,15 @@
             }
           </ol>
         </section>
+
+        @if (selected(); as s) {
+          <app-extraction-panel
+            [revision]="s"
+            [canDecide]="d.canUpload"
+            (viewPage)="showPage($event)"
+            (metadataChanged)="load(d.id)"
+          />
+        }
 
         @if (d.revisions.length > 1) {
           <section class="panel" aria-labelledby="compare-title">

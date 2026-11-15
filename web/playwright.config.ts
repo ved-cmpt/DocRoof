@@ -21,12 +21,12 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      testIgnore: /screenshots\.spec\.ts/,
+      testIgnore: /(screenshots|og-image)\.spec\.ts/,
     },
     {
       name: 'screenshots',
       use: { ...devices['Desktop Chrome'] },
-      testMatch: /screenshots\.spec\.ts/,
+      testMatch: /(screenshots|og-image)\.spec\.ts/,
     },
   ],
 });

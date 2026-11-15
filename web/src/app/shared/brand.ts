@@ -1,5 +1,6 @@
 import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { GITHUB_URL } from './site';
 
 /** DocRoof mark: a roof chevron over a document with a revision tab. */
 @Component({
@@ -138,9 +139,7 @@ export class PublicHeaderComponent {}
           <a routerLink="/demo">Try the demo</a>
           <a routerLink="/case-study">Case study</a>
           <a routerLink="/login">Sign in</a>
-          <a href="https://github.com/" rel="noopener" target="_blank"
-            >Source on GitHub (link set by owner)</a
-          >
+          <a [href]="githubUrl" rel="noopener" target="_blank">Source on GitHub</a>
         </nav>
         <div class="col">
           <h2>Built with</h2>
@@ -206,4 +205,6 @@ export class PublicHeaderComponent {}
     }
   `,
 })
-export class PublicFooterComponent {}
+export class PublicFooterComponent {
+  protected readonly githubUrl = GITHUB_URL;
+}

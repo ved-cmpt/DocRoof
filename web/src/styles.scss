@@ -208,6 +208,7 @@ code,
 }
 
 .panel {
+  position: relative;
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
@@ -399,6 +400,8 @@ code,
 }
 
 .table-scroll {
+  /* positioned so visually-hidden helpers inside cells stay inside the scroll box */
+  position: relative;
   overflow-x: auto;
 }
 
