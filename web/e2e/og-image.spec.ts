@@ -31,5 +31,5 @@ test('render favicon and touch icon PNGs', async ({ page }) => {
     await page.screenshot({ path, omitBackground: background === 'transparent' });
   };
   await render(32, 0, 'transparent', 'public/favicon-32.png');
-  await render(180, 22, '#FAFAF7', 'public/apple-touch-icon.png');
+  await render(180, 22, '#FBF6EF', 'public/apple-touch-icon.png');
 });

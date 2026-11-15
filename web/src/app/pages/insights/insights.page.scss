@@ -117,15 +117,15 @@
     background: var(--brand);
   }
 
-  &.grey {
-    background: var(--chart-grey);
+  &.sand {
+    background: var(--chart-sand);
   }
 
   &.line {
     height: 2px;
     width: 14px;
     border-radius: 1px;
-    background: var(--text);
+    background: var(--chart-brown);
   }
 }
 
@@ -197,8 +197,8 @@
     background: var(--brand);
   }
 
-  &.grey {
-    background: var(--chart-grey);
+  &.sand {
+    background: var(--chart-sand);
   }
 }
 
@@ -211,7 +211,7 @@
 
   polyline {
     fill: none;
-    stroke: var(--text);
+    stroke: var(--chart-brown);
     stroke-width: 1.5;
     stroke-linejoin: round;
   }
@@ -224,7 +224,7 @@
   margin: 0 0 -3.5px -3.5px;
   border-radius: var(--r-full);
   background: var(--surface);
-  border: 1.5px solid var(--text);
+  border: 1.5px solid var(--chart-brown);
 }
 
 .wk-labels {
@@ -284,6 +284,10 @@
 
   &.seg {
     border-radius: 0;
+  }
+
+  &.seg + &.seg {
+    box-shadow: inset 1px 0 0 var(--surface);
   }
 }
 

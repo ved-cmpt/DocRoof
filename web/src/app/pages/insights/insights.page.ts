@@ -7,12 +7,12 @@ import { TopbarComponent } from '../../layout/topbar.component';
 import { EmptyStateComponent, IconComponent, LongDateTimePipe } from '../../shared/ui';
 import { InsightsService, InsightsView } from './insights.service';
 
-/** One brand colour plus neutral greys; status colour only where it means status (overdue). */
+/** Terracotta brand, brown and sand; status colour only where it means status (overdue). */
 const STATUS_FILL: Record<string, string> = {
   Issued: 'var(--brand)',
-  InReview: 'color-mix(in srgb, var(--brand) 45%, var(--surface))',
-  Draft: 'var(--chart-grey)',
-  Archived: 'var(--chart-grey-light)',
+  InReview: 'var(--chart-brown)',
+  Draft: 'var(--chart-sand)',
+  Archived: 'var(--chart-sand-light)',
 };
 
 type ChartKey = 'weeks' | 'overdue' | 'documents' | 'rfis' | 'submittals';
@@ -73,7 +73,7 @@ export class InsightsPage {
   }
 
   protected fill(status: string): string {
-    return STATUS_FILL[status] ?? 'var(--chart-grey)';
+    return STATUS_FILL[status] ?? 'var(--chart-sand)';
   }
 
   protected pct(value: number, max: number): number {

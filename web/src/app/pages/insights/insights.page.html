@@ -46,7 +46,7 @@
           <h2>RFIs opened vs closed per week</h2>
           <span class="legend" aria-hidden="true">
             <span><i class="sw brand"></i>Opened</span>
-            <span><i class="sw grey"></i>Closed</span>
+            <span><i class="sw sand"></i>Closed</span>
             <span><i class="sw line"></i>Open at week end</span>
           </span>
           <button
@@ -82,7 +82,7 @@
                 @for (w of v.weeks; track w.label) {
                   <div class="wk-col">
                     <span class="bar brand" [style.height.%]="pct(w.opened, scale(v))"></span>
-                    <span class="bar grey" [style.height.%]="pct(w.closed, scale(v))"></span>
+                    <span class="bar sand" [style.height.%]="pct(w.closed, scale(v))"></span>
                   </div>
                 }
               </div>
