@@ -1,8 +1,5 @@
-/**
- * Site-wide constants. GITHUB_URL is a placeholder until the owner publishes the repository
- * (see docs/OWNER_TODO.md, "Set the GitHub link").
- */
-export const GITHUB_URL = 'https://github.com/';
+/** Site-wide constants. GITHUB_URL is the public source repository. */
+export const GITHUB_URL = 'https://github.com/ved-cmpt/DocRoof';
 
 /**
  * Test counts measured in the final local run recorded in docs/STATUS.md (2026-11-15).

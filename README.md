@@ -1,5 +1,7 @@
 # DocRoof
 
+[![ci](https://github.com/ved-cmpt/DocRoof/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ved-cmpt/DocRoof/actions/workflows/ci.yml)
+
 **Every document, decision, and revision stays traceable.**
 
 DocRoof is an enterprise-style construction **document control** system: versioned drawings and specifications,
@@ -14,7 +16,8 @@ rules-based metadata extraction with page citations — built with Angular, ASP.
 ## Status
 
 All three planned phases are built and tested locally (see [docs/STATUS.md](docs/STATUS.md) for every command and
-its real result). **Hosted deployment is not complete** — it needs the owner's accounts; the image, infrastructure
+its real result) and CI runs on every push and pull request
+([GitHub Actions](https://github.com/ved-cmpt/DocRoof/actions/workflows/ci.yml)). **Hosted deployment is not complete** — it needs the owner's accounts; the image, infrastructure
 templates and smoke scripts are ready ([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md), [docs/OWNER_TODO.md](docs/OWNER_TODO.md)).
 
 | Check (last local run, 2026-11-15) | Result |

@@ -110,3 +110,9 @@ tokens (BREACH-style attacks rely on compressing secrets next to attacker-contro
 ## ADR-022 — Guest upload quota
 Each guest workspace may upload at most 30 files / 60 MB (configurable) on top of the seed data, so one visitor
 cannot exhaust a free database.
+
+## ADR-023 — Root-anchored ignore rules
+The first GitHub CI run failed to compile: the unanchored `data/` rule in `.gitignore` (meant for local file
+storage) also matched `api/src/DocRoof.Infrastructure/Data/` because Git on Windows ignores case, so the DbContext,
+interceptors and migrations were never committed. Local builds passed because the files existed on disk. The rule
+is now `/data/`; a clean clone is built before pushing CI fixes.
